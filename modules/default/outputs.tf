@@ -21,3 +21,7 @@ output "load_balancer_ips" {
 output "dns_zone_name" {
   value = azurerm_dns_zone.default.name
 }
+
+output "subnet_id" {
+  value = azurerm_subnet.default.id
+}
