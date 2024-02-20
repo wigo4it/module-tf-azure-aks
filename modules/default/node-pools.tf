@@ -14,6 +14,9 @@ resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
   os_disk_type          = each.value.os_disk_type
   node_labels           = each.value.labels
   node_taints           = each.value.taints
+  priority              = each.value.spot_node ? "Spot" : "Regular"
+  spot_max_price        = each.value.spot_max_price
+  eviction_policy       = each.value.eviction_policy
   enable_auto_scaling   = each.value.cluster_auto_scaling
   min_count             = each.value.cluster_auto_scaling_min_count
   max_count             = each.value.cluster_auto_scaling_max_count
