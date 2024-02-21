@@ -48,6 +48,11 @@ resource "azurerm_kubernetes_cluster" "default" {
   workload_identity_enabled = true
   oidc_issuer_enabled       = true
 
+  workload_autoscaler_profile {
+    keda_enabled                    = var.workload_autoscaler_profile.keda_enabled
+    vertical_pod_autoscaler_enabled = var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled
+  }
+
   api_server_access_profile {
     authorized_ip_ranges = var.aks_authorized_ip_ranges
   }

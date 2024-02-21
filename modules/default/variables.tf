@@ -8,6 +8,13 @@ variable "kubernetes_version" {
   type        = string
 }
 
+variable "workload_autoscaler_profile" {
+  type = object({
+    keda_enabled                    = optional(bool, false)
+    vertical_pod_autoscaler_enabled = optional(bool, false)
+  })
+}
+
 variable "domain_name" {
   description = "The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains."
   type        = string
