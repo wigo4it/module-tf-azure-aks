@@ -25,6 +25,11 @@ resource "azurerm_kubernetes_cluster" "default" {
     min_count             = var.aks_default_node_pool.cluster_auto_scaling_min_count
     max_count             = var.aks_default_node_pool.cluster_auto_scaling_max_count
     enable_node_public_ip = var.aks_default_node_pool.enable_node_public_ip
+
+    upgrade_settings {
+      drain_timeout_in_minutes = 2
+      max_surge = "10%"
+    }
   }
 
   network_profile {
