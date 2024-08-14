@@ -61,6 +61,14 @@ resource "azurerm_kubernetes_cluster" "default" {
   api_server_access_profile {
     authorized_ip_ranges = var.aks_authorized_ip_ranges
   }
+
+  lifecycle {
+    ignore_changes = [
+      default_node_pool[0].node_count,
+      default_node_pool[0].upgrade_settings,
+      kubernetes_version
+    ]
+  }
 }
 
 resource "azurerm_role_assignment" "aks_network_contributor" {
