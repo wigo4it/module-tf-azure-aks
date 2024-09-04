@@ -55,7 +55,6 @@ variable "aks_default_node_pool" {
     mode                           = optional(string, "System")
     max_pods                       = optional(number, 120)
     labels                         = optional(map(string), {})
-    taints                         = optional(list(string), [])
     spot_node                      = optional(bool, false)
     spot_max_price                 = optional(number, null)
     eviction_policy                = optional(string, null)
@@ -66,6 +65,7 @@ variable "aks_default_node_pool" {
     cluster_auto_scaling_min_count = optional(number, null)
     cluster_auto_scaling_max_count = optional(number, null)
     enable_node_public_ip          = optional(bool, false)
+    only_critical_addons_enabled   = optional(bool, false)
   })
 }
 

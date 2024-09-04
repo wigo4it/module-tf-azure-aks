@@ -13,22 +13,22 @@ resource "azurerm_kubernetes_cluster" "default" {
     name                        = "agentpool"
     temporary_name_for_rotation = "agentpooltmp"
 
-    vm_size               = var.aks_default_node_pool.vm_size
-    zones                 = var.aks_default_node_pool.zones
-    max_pods              = var.aks_default_node_pool.max_pods
-    os_disk_size_gb       = var.aks_default_node_pool.os_disk_size_gb
-    os_disk_type          = var.aks_default_node_pool.os_disk_type
-    node_labels           = var.aks_default_node_pool.labels
-    node_taints           = var.aks_default_node_pool.taints
-    node_count            = var.aks_default_node_pool.node_count
-    enable_auto_scaling   = var.aks_default_node_pool.cluster_auto_scaling
-    min_count             = var.aks_default_node_pool.cluster_auto_scaling_min_count
-    max_count             = var.aks_default_node_pool.cluster_auto_scaling_max_count
-    enable_node_public_ip = var.aks_default_node_pool.enable_node_public_ip
+    vm_size                      = var.aks_default_node_pool.vm_size
+    zones                        = var.aks_default_node_pool.zones
+    max_pods                     = var.aks_default_node_pool.max_pods
+    os_disk_size_gb              = var.aks_default_node_pool.os_disk_size_gb
+    os_disk_type                 = var.aks_default_node_pool.os_disk_type
+    node_labels                  = var.aks_default_node_pool.labels
+    node_count                   = var.aks_default_node_pool.node_count
+    enable_auto_scaling          = var.aks_default_node_pool.cluster_auto_scaling
+    min_count                    = var.aks_default_node_pool.cluster_auto_scaling_min_count
+    max_count                    = var.aks_default_node_pool.cluster_auto_scaling_max_count
+    enable_node_public_ip        = var.aks_default_node_pool.enable_node_public_ip
+    only_critical_addons_enabled = var.aks_additional_node_pools.only_critical_addons_enabled
 
     upgrade_settings {
       drain_timeout_in_minutes = 2
-      max_surge = "10%"
+      max_surge                = "10%"
     }
   }
 
