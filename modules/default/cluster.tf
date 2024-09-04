@@ -24,7 +24,7 @@ resource "azurerm_kubernetes_cluster" "default" {
     min_count                    = var.aks_default_node_pool.cluster_auto_scaling_min_count
     max_count                    = var.aks_default_node_pool.cluster_auto_scaling_max_count
     enable_node_public_ip        = var.aks_default_node_pool.enable_node_public_ip
-    only_critical_addons_enabled = var.aks_additional_node_pools.only_critical_addons_enabled
+    only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
 
     upgrade_settings {
       drain_timeout_in_minutes = 2
