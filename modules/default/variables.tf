@@ -36,6 +36,12 @@ variable "subnet_address_prefixes" {
   type        = list(string)
 }
 
+variable "loadbalancer_ips" {
+  description = "The loadbalancer IP address(es) of the public ingress controller. If not provided, an azurerm_public_ip will be created."
+  type        = list(string)
+  default     = []
+}
+
 variable "internal_loadbalancer_ip" {
   description = "The loadbalancer IP address of the internal ingress controller."
   type        = string
