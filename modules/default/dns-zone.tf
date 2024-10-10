@@ -20,11 +20,11 @@ resource "azurerm_dns_a_record" "lb" {
 }
 
 resource "azurerm_dns_a_record" "int_wildcard" {
-  count = var.traefik_internal_loadbalancer_ip != "" ? 1 : 0
+  count = var.internal_loadbalancer_ip != "" ? 1 : 0
 
   zone_name           = azurerm_dns_zone.default.name
   resource_group_name = azurerm_resource_group.default.name
   name                = "*.int"
   ttl                 = 300
-  records             = [var.traefik_internal_loadbalancer_ip]
+  records             = [var.internal_loadbalancer_ip]
 }

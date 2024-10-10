@@ -50,7 +50,7 @@ No modules.
 | <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | The Kubernetes version to use. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | The name of the AKS cluster. | `string` | n/a | yes |
 | <a name="input_subnet_address_prefixes"></a> [subnet\_address\_prefixes](#input\_subnet\_address\_prefixes) | The address prefixes for the subnet. If not supplied, the entire `vnet_address_space` is used. | `list(string)` | `[]` | no |
-| <a name="input_traefik_internal_loadbalancer_ip"></a> [traefik\_internal\_loadbalancer\_ip](#input\_traefik\_internal\_loadbalancer\_ip) | The loadbalancer IP address of the internal Traefik ingress controller. | `string` | `""` | no |
+| <a name="input_internal_loadbalancer_ip"></a> [internal\_loadbalancer\_ip](#input\_internal\_loadbalancer\_ip) | The loadbalancer IP address of the internal ingress controller. | `string` | `""` | no |
 | <a name="input_vnet_address_space"></a> [vnet\_address\_space](#input\_vnet\_address\_space) | The CIDR ranges (address space) of the virtual network. | `list(string)` | n/a | yes |
 | <a name="input_vnet_peerings"></a> [vnet\_peerings](#input\_vnet\_peerings) | List of virtual network IDs to peer to. Don't forget to add this network on the other side of the peering. | `list(string)` | `[]` | no |
 | <a name="input_workload_autoscaler_profile"></a> [workload\_autoscaler\_profile](#input\_workload\_autoscaler\_profile) | n/a | <pre>object({<br>    keda_enabled                              = optional(bool, false)<br>    vertical_pod_autoscaler_enabled           = optional(bool, false)<br>  })</pre> | n/a | yes |

@@ -36,8 +36,8 @@ variable "subnet_address_prefixes" {
   type        = list(string)
 }
 
-variable "traefik_internal_loadbalancer_ip" {
-  description = "The loadbalancer IP address of the internal Traefik ingress controller."
+variable "internal_loadbalancer_ip" {
+  description = "The loadbalancer IP address of the internal ingress controller."
   type        = string
   default     = ""
 }
