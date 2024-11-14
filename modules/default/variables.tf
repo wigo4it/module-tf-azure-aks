@@ -15,6 +15,11 @@ variable "workload_autoscaler_profile" {
   })
 }
 
+variable "private_cluster_enabled" {
+  type = bool
+  default = false
+}
+
 variable "domain_name" {
   description = "The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains."
   type        = string

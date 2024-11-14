@@ -7,6 +7,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   automatic_channel_upgrade = "patch"
   node_resource_group       = "${azurerm_resource_group.default.name}-nodes"
   sku_tier                  = "Free"
+  private_cluster_enabled = var.private_cluster_enabled
 
   default_node_pool {
     vnet_subnet_id              = azurerm_subnet.default.id
