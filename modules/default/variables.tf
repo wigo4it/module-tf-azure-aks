@@ -20,6 +20,11 @@ variable "private_cluster_enabled" {
   default = false
 }
 
+variable "sku_tier" {
+  type = string
+  default = "Free"
+}
+
 variable "domain_name" {
   description = "The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains."
   type        = string

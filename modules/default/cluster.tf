@@ -6,7 +6,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   kubernetes_version        = var.kubernetes_version
   automatic_channel_upgrade = "patch"
   node_resource_group       = "${azurerm_resource_group.default.name}-nodes"
-  sku_tier                  = "Free"
+  sku_tier                  = var.sku_tier
   private_cluster_enabled = var.private_cluster_enabled
 
   default_node_pool {
