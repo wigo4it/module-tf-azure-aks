@@ -28,7 +28,7 @@ resource "azurerm_kubernetes_cluster" "default" {
     only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
 
     upgrade_settings {
-      drain_timeout_in_minutes = 2
+      drain_timeout_in_minutes = 5
       max_surge                = "10%"
     }
   }
