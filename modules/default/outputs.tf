@@ -29,3 +29,7 @@ output "subnet_id" {
 output "dns_zone_name_servers" {
   value = azurerm_dns_zone.default.name_servers
 }
+output "cert_manager_managed_identity_client_id" {
+  description = "Value for managedIdentity: clientID in ClusterIssuer"
+  value       = azurerm_user_assigned_identity.cert_manager.client_id
+}
