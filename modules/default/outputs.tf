@@ -25,3 +25,7 @@ output "dns_zone_name" {
 output "subnet_id" {
   value = azurerm_subnet.default.id
 }
+
+output "dns_zone_name_servers" {
+  value = azurerm_dns_zone.default.name_servers
+}
