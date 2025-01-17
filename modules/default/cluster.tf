@@ -4,10 +4,10 @@ resource "azurerm_kubernetes_cluster" "default" {
   resource_group_name       = azurerm_resource_group.default.name
   dns_prefix                = "aks-${var.name}"
   kubernetes_version        = var.kubernetes_version
-  automatic_channel_upgrade = "patch"
+  automatic_upgrade_channel = "patch"
   node_resource_group       = "${azurerm_resource_group.default.name}-nodes"
   sku_tier                  = var.sku_tier
-  private_cluster_enabled = var.private_cluster_enabled
+  private_cluster_enabled   = var.private_cluster_enabled
 
   default_node_pool {
     vnet_subnet_id              = azurerm_subnet.default.id
@@ -21,10 +21,10 @@ resource "azurerm_kubernetes_cluster" "default" {
     os_disk_type                 = var.aks_default_node_pool.os_disk_type
     node_labels                  = var.aks_default_node_pool.labels
     node_count                   = var.aks_default_node_pool.node_count
-    enable_auto_scaling          = var.aks_default_node_pool.cluster_auto_scaling
+    auto_scaling_enabled         = var.aks_default_node_pool.cluster_auto_scaling_enabled
     min_count                    = var.aks_default_node_pool.cluster_auto_scaling_min_count
     max_count                    = var.aks_default_node_pool.cluster_auto_scaling_max_count
-    enable_node_public_ip        = var.aks_default_node_pool.enable_node_public_ip
+    node_public_ip_enabled       = var.aks_default_node_pool.node_public_ip_enabled
     only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
 
     upgrade_settings {

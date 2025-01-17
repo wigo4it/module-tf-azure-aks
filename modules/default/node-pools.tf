@@ -5,22 +5,22 @@ resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
   vnet_subnet_id        = azurerm_subnet.default.id
   orchestrator_version  = var.kubernetes_version
 
-  name                  = substr(each.key, 0, 12)
-  vm_size               = each.value.vm_size
-  zones                 = each.value.zones
-  mode                  = each.value.mode
-  max_pods              = each.value.max_pods
-  os_disk_size_gb       = each.value.os_disk_size_gb
-  os_disk_type          = each.value.os_disk_type
-  node_labels           = each.value.labels
-  node_taints           = each.value.taints
-  priority              = each.value.spot_node ? "Spot" : "Regular"
-  spot_max_price        = each.value.spot_max_price
-  eviction_policy       = each.value.eviction_policy
-  enable_auto_scaling   = each.value.cluster_auto_scaling
-  min_count             = each.value.cluster_auto_scaling_min_count
-  max_count             = each.value.cluster_auto_scaling_max_count
-  enable_node_public_ip = each.value.enable_node_public_ip
+  name                   = substr(each.key, 0, 12)
+  vm_size                = each.value.vm_size
+  zones                  = each.value.zones
+  mode                   = each.value.mode
+  max_pods               = each.value.max_pods
+  os_disk_size_gb        = each.value.os_disk_size_gb
+  os_disk_type           = each.value.os_disk_type
+  node_labels            = each.value.labels
+  node_taints            = each.value.taints
+  priority               = each.value.spot_node ? "Spot" : "Regular"
+  spot_max_price         = each.value.spot_max_price
+  eviction_policy        = each.value.eviction_policy
+  auto_scaling_enabled   = each.value.cluster_auto_scaling_enabled
+  min_count              = each.value.cluster_auto_scaling_min_count
+  max_count              = each.value.cluster_auto_scaling_max_count
+  node_public_ip_enabled = each.value.node_public_ip_enabled
 
   lifecycle {
     ignore_changes = [node_count]

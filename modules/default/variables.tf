@@ -16,12 +16,12 @@ variable "workload_autoscaler_profile" {
 }
 
 variable "private_cluster_enabled" {
-  type = bool
+  type    = bool
   default = false
 }
 
 variable "sku_tier" {
-  type = string
+  type    = string
   default = "Free"
 }
 
@@ -77,10 +77,10 @@ variable "aks_default_node_pool" {
     node_os                        = optional(string, null)
     os_disk_size_gb                = optional(number, null)
     os_disk_type                   = optional(string, null)
-    cluster_auto_scaling           = optional(bool, false)
+    cluster_auto_scaling_enabled   = optional(bool, false)
     cluster_auto_scaling_min_count = optional(number, null)
     cluster_auto_scaling_max_count = optional(number, null)
-    enable_node_public_ip          = optional(bool, false)
+    node_public_ip_enabled         = optional(bool, false)
     only_critical_addons_enabled   = optional(bool, false)
   })
 }
@@ -102,10 +102,10 @@ variable "aks_additional_node_pools" {
     node_os                        = optional(string, null)
     os_disk_size_gb                = optional(number, null)
     os_disk_type                   = optional(string, null)
-    cluster_auto_scaling           = optional(bool, false)
+    cluster_auto_scaling_enabled   = optional(bool, false)
     cluster_auto_scaling_min_count = optional(number, null)
     cluster_auto_scaling_max_count = optional(number, null)
-    enable_node_public_ip          = optional(bool, false)
+    node_public_ip_enabled         = optional(bool, false)
   }))
 
   default = {}
