@@ -110,3 +110,12 @@ variable "aks_additional_node_pools" {
 
   default = {}
 }
+
+variable "storage_profile" {
+  type = object({
+    blob_driver_enabled         = optional(bool, false)
+    disk_driver_enabled         = optional(bool, true)
+    file_driver_enabled         = optional(bool, true)
+    snapshot_controller_enabled = optional(bool, true)
+  })
+}

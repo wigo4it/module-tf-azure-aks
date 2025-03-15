@@ -63,6 +63,13 @@ resource "azurerm_kubernetes_cluster" "default" {
     authorized_ip_ranges = var.aks_authorized_ip_ranges
   }
 
+  storage_profile {
+    blob_driver_enabled         = var.storage_profile.blob_driver_enabled
+    disk_driver_enabled         = var.storage_profile.disk_driver_enabled
+    file_driver_enabled         = var.storage_profile.file_driver_enabled
+    snapshot_controller_enabled = var.storage_profile.snapshot_controller_enabled
+  }
+
   lifecycle {
     ignore_changes = [
       default_node_pool[0].node_count,
