@@ -1,0 +1,10 @@
+{
+  "extends": ["config:recommended"],
+  "enabledManagers": ["terraform"],
+  "packageRules": [
+    {
+      "matchDatasources": ["terraform-provider"],
+      "registryUrls": ["https://registry.opentofu.org"]
+    }
+  ]
+}
