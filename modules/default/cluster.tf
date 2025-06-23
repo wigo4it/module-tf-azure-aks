@@ -43,7 +43,7 @@ resource "azurerm_kubernetes_cluster" "default" {
 
     load_balancer_profile {
       outbound_ip_address_ids = concat(
-        azurerm_public_ip.egress_ipv4.*.id,
+        azurerm_public_ip.egress_ipv4[*].id,
       )
     }
   }

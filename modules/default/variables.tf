@@ -10,9 +10,13 @@ variable "kubernetes_version" {
 
 variable "workload_autoscaler_profile" {
   type = object({
-    keda_enabled                    = optional(bool, false)
-    vertical_pod_autoscaler_enabled = optional(bool, false)
+    keda_enabled                    = bool
+    vertical_pod_autoscaler_enabled = bool
   })
+  default = {
+    keda_enabled                    = false
+    vertical_pod_autoscaler_enabled = false
+  }
 }
 
 variable "private_cluster_enabled" {
@@ -113,11 +117,17 @@ variable "aks_additional_node_pools" {
 
 variable "storage_profile" {
   type = object({
-    blob_driver_enabled         = optional(bool, false)
-    disk_driver_enabled         = optional(bool, true)
-    file_driver_enabled         = optional(bool, true)
-    snapshot_controller_enabled = optional(bool, true)
+    blob_driver_enabled         = bool
+    disk_driver_enabled         = bool
+    file_driver_enabled         = bool
+    snapshot_controller_enabled = bool
   })
+  default = {
+    blob_driver_enabled         = false
+    disk_driver_enabled         = true
+    file_driver_enabled         = true
+    snapshot_controller_enabled = true
+  }
 }
 
 variable "location" {

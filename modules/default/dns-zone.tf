@@ -8,7 +8,7 @@ resource "azurerm_dns_a_record" "wildcard" {
   resource_group_name = azurerm_resource_group.default.name
   name                = "*"
   ttl                 = 300
-  records             = length(var.loadbalancer_ips) == 0 ? azurerm_public_ip.ingress_ipv4.*.ip_address : var.loadbalancer_ips
+  records             = length(var.loadbalancer_ips) == 0 ? azurerm_public_ip.ingress_ipv4[*].ip_address : var.loadbalancer_ips
 }
 
 resource "azurerm_dns_a_record" "lb" {
@@ -16,7 +16,7 @@ resource "azurerm_dns_a_record" "lb" {
   resource_group_name = azurerm_resource_group.default.name
   name                = "lb"
   ttl                 = 300
-  records             = length(var.loadbalancer_ips) == 0 ? azurerm_public_ip.ingress_ipv4.*.ip_address : var.loadbalancer_ips
+  records             = length(var.loadbalancer_ips) == 0 ? azurerm_public_ip.ingress_ipv4[*].ip_address : var.loadbalancer_ips
 }
 
 resource "azurerm_dns_a_record" "int_wildcard" {

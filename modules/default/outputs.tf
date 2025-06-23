@@ -15,7 +15,7 @@ output "cluster_storage_account_name" {
 }
 
 output "load_balancer_ips" {
-  value = azurerm_public_ip.ingress_ipv4.*.ip_address
+  value = azurerm_public_ip.ingress_ipv4[*].ip_address
 }
 
 output "dns_zone_name" {
