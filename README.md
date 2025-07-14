@@ -1,6 +1,7 @@
 # Terraform module: Haven
 
-This module sets up all needed to run a Haven-compliant Kubernetes cluster in Azure. It includes networking, DNS, AKS and Workload Identity configuration.
+This module sets up all needed to run a Haven-compliant Kubernetes cluster in Azure.
+It includes networking, DNS, AKS and Workload Identity configuration.
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -69,3 +70,78 @@ No modules.
 | <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | n/a |
 | <a name="output_subnet_id"></a> [subnet\_id](#output\_subnet\_id) | n/a |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+
+## Examples
+
+This module includes comprehensive examples to help you get started:
+
+- **[minimal](examples/minimal/)**: A complete AKS cluster with all infrastructure created by the module
+- **[existing-infrastructure](examples/existing-infrastructure/)**: AKS cluster using existing VNet, DNS, and
+  Log Analytics workspace
+
+See the [CONTRIBUTING.md](CONTRIBUTING.md) file for detailed usage instructions and best practices.
+
+## Testing
+
+This module includes a comprehensive integration test suite that validates both examples:
+
+### Quick Test
+
+```bash
+# Test the minimal example
+cd examples && ./integration-test.sh minimal
+
+# Test the existing-infrastructure example
+cd examples && ./integration-test.sh existing-infrastructure
+
+# Test all examples
+cd examples && ./integration-test.sh all
+```
+
+### Advanced Testing Options
+
+```bash
+# Dry run (no actual deployment)
+DRY_RUN=true ./integration-test.sh all
+
+# Skip infrastructure destruction (for debugging)
+SKIP_DESTROY=true ./integration-test.sh minimal
+
+# CI/CD mode (no colors, structured output)
+CI_MODE=true ./integration-test.sh all
+```
+
+The integration test suite:
+
+- Validates Terraform configuration and formatting
+- Deploys the complete infrastructure
+- Tests AKS cluster connectivity and basic operations
+- Validates monitoring integration
+- Tests DNS configuration (if applicable)
+- Generates GitLab CI-compatible JUnit XML reports
+- Automatically destroys infrastructure after testing
+
+### Test Reports
+
+After running tests, you'll find detailed reports in the `test-results/` directory:
+
+- `integration-test-report.xml` - JUnit XML report for CI/CD integration
+- `integration-test.log` - Detailed execution log
+- `summary.txt` - Human-readable test summary
+
+### GitLab CI/CD Integration
+
+This repository includes a complete GitLab CI/CD configuration for automated testing:
+
+- **`.gitlab-ci.yml`** - Main pipeline configuration
+- **`.gitlab/ci/integration-test.yml`** - Integration test job definitions
+- **`.gitlab/README.md`** - Detailed CI/CD setup documentation
+
+The pipeline automatically:
+
+- Validates configuration on merge requests
+- Runs full integration tests on main branch and scheduled pipelines
+- Generates test reports and artifacts
+- Supports manual cleanup of resources
+
+See [GitLab CI/CD Setup](.gitlab/README.md) for detailed configuration instructions.

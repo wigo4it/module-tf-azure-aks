@@ -1,20 +1,29 @@
 resource "azurerm_kubernetes_cluster" "default" {
-  name                         = "aks-${var.name}"
-  location                     = azurerm_resource_group.default.location
+  name                         = var.name
+  location                     = var.location
   resource_group_name          = azurerm_resource_group.default.name
-  dns_prefix                   = "aks-${var.name}"
+  dns_prefix                   = coalesce(var.dns_prefix, "aks-${var.name}")
   kubernetes_version           = var.kubernetes_version
-  automatic_upgrade_channel    = "patch"
+  automatic_upgrade_channel    = var.automatic_upgrade_channel
   node_resource_group          = "${azurerm_resource_group.default.name}-nodes"
   sku_tier                     = var.sku_tier
   private_cluster_enabled      = var.private_cluster_enabled
-  image_cleaner_enabled        = true
-  image_cleaner_interval_hours = 48
+  image_cleaner_enabled        = var.image_cleaner_enabled
+  image_cleaner_interval_hours = var.image_cleaner_interval_hours
+
+  # Enable RBAC for security compliance
+  role_based_access_control_enabled = true
+
+  # Azure Monitor for container metrics (security compliance)
+  monitor_metrics {
+    annotations_allowed = null
+    labels_allowed      = null
+  }
 
   default_node_pool {
-    vnet_subnet_id              = azurerm_subnet.default.id
-    name                        = "agentpool"
-    temporary_name_for_rotation = "agentpooltmp"
+    vnet_subnet_id              = local.subnet_id
+    name                        = var.aks_default_node_pool.name
+    temporary_name_for_rotation = "${var.aks_default_node_pool.name}tmp"
 
     vm_size                      = var.aks_default_node_pool.vm_size
     zones                        = var.aks_default_node_pool.zones
@@ -29,17 +38,20 @@ resource "azurerm_kubernetes_cluster" "default" {
     node_public_ip_enabled       = var.aks_default_node_pool.node_public_ip_enabled
     only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
 
-    upgrade_settings {
-      drain_timeout_in_minutes = 5
-      max_surge                = "10%"
+    dynamic "upgrade_settings" {
+      for_each = var.aks_default_node_pool.upgrade_settings != null ? [1] : []
+      content {
+        drain_timeout_in_minutes = var.aks_default_node_pool.upgrade_settings.drain_timeout_in_minutes
+        max_surge                = var.aks_default_node_pool.upgrade_settings.max_surge
+      }
     }
   }
 
   network_profile {
-    network_plugin    = "azure"
-    network_policy    = "calico"
-    load_balancer_sku = "standard"
-    ip_versions       = ["IPv4"]
+    network_plugin    = var.network_profile.network_plugin
+    network_policy    = var.network_profile.network_policy
+    load_balancer_sku = var.network_profile.load_balancer_sku
+    ip_versions       = var.network_profile.ip_versions
 
     load_balancer_profile {
       outbound_ip_address_ids = concat(
@@ -49,16 +61,16 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   identity {
-    type = "SystemAssigned"
+    type = "SystemAssigned" # ?? Should this be "SystemAssigned, UserAssigned"?
   }
 
   # workload identity
-  workload_identity_enabled = true
-  oidc_issuer_enabled       = true
+  workload_identity_enabled = var.workload_identity_enabled
+  oidc_issuer_enabled       = var.oidc_issuer_enabled
 
   workload_autoscaler_profile {
-    keda_enabled                    = var.workload_autoscaler_profile.keda_enabled
-    vertical_pod_autoscaler_enabled = var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled
+    keda_enabled                    = var.workload_autoscaler_profile != null ? var.workload_autoscaler_profile.keda_enabled : false
+    vertical_pod_autoscaler_enabled = var.workload_autoscaler_profile != null ? var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled : false
   }
 
   api_server_access_profile {
@@ -72,6 +84,12 @@ resource "azurerm_kubernetes_cluster" "default" {
     snapshot_controller_enabled = var.storage_profile.snapshot_controller_enabled
   }
 
+  # Enable OMS Agent for Log Analytics monitoring (security compliance)
+  oms_agent {
+    log_analytics_workspace_id      = local.log_analytics_workspace_id
+    msi_auth_for_monitoring_enabled = true
+  }
+
   lifecycle {
     ignore_changes = [
       default_node_pool[0].node_count,
@@ -81,6 +99,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 }
 
+# ?? why is this needed?
 resource "azurerm_role_assignment" "aks_network_contributor" {
   scope                = azurerm_resource_group.default.id
   role_definition_name = "Network Contributor"

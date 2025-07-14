@@ -2,7 +2,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
   for_each = var.aks_additional_node_pools
 
   kubernetes_cluster_id = azurerm_kubernetes_cluster.default.id
-  vnet_subnet_id        = azurerm_subnet.default.id
+  vnet_subnet_id        = local.subnet_id
   orchestrator_version  = var.kubernetes_version
 
   name                   = substr(each.key, 0, 12)
