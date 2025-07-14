@@ -1,0 +1,104 @@
+# Integration Test Configuration for Haven AKS Terraform Module
+# This file defines the CI/CD jobs for testing the Haven AKS module examples
+# It should be included from the main .gitlab-ci.yml file
+
+stages:
+  - validate
+  - test-minimal
+  - test-existing-infrastructure
+  - test-all
+
+variables:
+  # Azure authentication variables (set in GitLab CI/CD project variables)
+  # AZURE_CLIENT_ID: ""
+  # AZURE_CLIENT_SECRET: ""
+  # AZURE_SUBSCRIPTION_ID: ""
+  # AZURE_TENANT_ID: ""
+
+# Common setup for all jobs
+.setup: &setup
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl unzip jq
+    # Install Azure CLI
+    - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+    # Install Terraform
+    - wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
+    - apt-get update && apt-get install -y terraform
+    # Install kubectl
+    - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    - chmod +x kubectl && mv kubectl /usr/local/bin/
+    # Azure authentication
+    - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+    - az account set --subscription $AZURE_SUBSCRIPTION_ID
+  artifacts:
+    reports:
+      junit: scripts/integration-test/test-results/integration-test-report.xml
+    paths:
+      - scripts/integration-test/test-results/
+    expire_in: 1 week
+    when: always
+
+# Dry run validation (quick check)
+validate:
+  <<: *setup
+  stage: validate
+  script:
+    - DRY_RUN=true ./scripts/integration-test/integration-test.sh all
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Test minimal example
+test-minimal:
+  <<: *setup
+  stage: test-minimal
+  script:
+    - ./scripts/integration-test/integration-test.sh minimal
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  timeout: 2h
+
+# Test existing-infrastructure example
+test-existing-infrastructure:
+  <<: *setup
+  stage: test-existing-infrastructure
+  script:
+    - ./scripts/integration-test/integration-test.sh existing-infrastructure
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  timeout: 2h
+
+# Test all examples (comprehensive test)
+test-all:
+  <<: *setup
+  stage: test-all
+  script:
+    - ./scripts/integration-test/integration-test.sh all
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - when: manual
+  timeout: 3h
+  allow_failure: false
+
+# Clean up any leftover resources (manual job)
+cleanup:
+  <<: *setup
+  stage: test-all
+  script:
+    - cd examples
+    - |
+      for example in minimal existing-infrastructure; do
+        cd $example
+        if [ -f .terraform.lock.hcl ]; then
+          terraform init -input=false
+          terraform destroy -auto-approve || true
+        fi
+        cd ..
+      done
+  rules:
+    - when: manual
+  allow_failure: true

@@ -1,7 +1,8 @@
-# Local .terraform directories
+# Local .terraform directories and files
 **/.terraform/*
 **/.terraform.lock.hcl
 **/planfile*
+tfplan
 
 # .tfstate files
 *.tfstate
@@ -11,3 +12,7 @@
 crash.log
 
 *.env
+
+
+# Test results
+scripts/integration-test/test-results/

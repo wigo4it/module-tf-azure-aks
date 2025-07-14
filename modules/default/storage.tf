@@ -1,3 +1,5 @@
+
+# ?? Is only used for output??
 resource "azurerm_storage_account" "default" {
   name                     = "aks${replace(var.name, "-", "")}"
   resource_group_name      = azurerm_resource_group.default.name

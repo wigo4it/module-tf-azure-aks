@@ -1,0 +1,37 @@
+extends: default
+
+rules:
+  # Allow longer lines for readability
+  line-length:
+    max: 120
+    level: warning
+
+  # Allow document start markers to be optional
+  document-start:
+    present: false
+
+  # Allow truthy values (on/off, yes/no, etc.)
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+    check-keys: false
+
+  # Allow comments to have different indentation
+  comments-indentation: disable
+
+  # Allow empty lines
+  empty-lines:
+    max: 2
+    max-start: 1
+    max-end: 1
+
+  # Indentation rules
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+ignore: |
+  .github/
+  .terraform/
+  **/.terraform/
+  **/.terraform.lock.hcl

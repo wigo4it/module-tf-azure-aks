@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-# Example script: Run Terraform init, plan, and apply for the minimal example
-# Usage: ./run-terraform.sh [testcase]
-# Example: ./run-terraform.sh minimal
+# Example script: Run Terraform init, plan, and apply for Haven module examples
+# Usage: ./tf-plan.sh [testcase]
+# Examples:
+#   ./tf-plan.sh minimal
+#   ./tf-plan.sh existing-infrastructure
 
 set -euo pipefail
 
 # Set testcase directory (default: minimal)
 TESTCASE=${1:-minimal}
-EXAMPLE_DIR="$(dirname "$0")/$TESTCASE"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+EXAMPLE_DIR="$PROJECT_ROOT/examples/$TESTCASE"
 
 if [ ! -d "$EXAMPLE_DIR" ]; then
   echo "Error: Example directory '$EXAMPLE_DIR' does not exist." >&2

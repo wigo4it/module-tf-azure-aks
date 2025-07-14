@@ -1,3 +1,8 @@
+output "cluster_name" {
+  description = "Name of the AKS cluster"
+  value       = azurerm_kubernetes_cluster.default.name
+}
+
 output "resource_group_name" {
   value = azurerm_resource_group.default.name
 }
@@ -19,17 +24,15 @@ output "load_balancer_ips" {
 }
 
 output "dns_zone_name" {
-  value = azurerm_dns_zone.default.name
+  value = local.dns_zone_name
 }
 
 output "subnet_id" {
-  value = azurerm_subnet.default.id
+  value = local.subnet_id
 }
 
-output "dns_zone_name_servers" {
-  value = azurerm_dns_zone.default.name_servers
-}
 output "cert_manager_managed_identity_client_id" {
   description = "Value for managedIdentity: clientID in ClusterIssuer"
   value       = azurerm_user_assigned_identity.cert_manager.client_id
+  sensitive   = true
 }
