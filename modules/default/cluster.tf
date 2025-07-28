@@ -1,7 +1,7 @@
 resource "azurerm_user_assigned_identity" "aks_identity" {
   count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
 
-  name                = "${var.name}-identity"
+  name                = "id-${var.name}"
   location            = var.location
   resource_group_name = azurerm_resource_group.default.name
 }
