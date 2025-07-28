@@ -1,13 +1,11 @@
 variable "location" {
-  description = "Azure region of the resources"
-  default     = "westeurope"
+  description = "(Required) Azure region of the resources"
   type        = string
 }
 
 variable "resource_group_name" {
-  description = "Name of the resource group where resources will be created"
+  description = "(Required) Name of the resource group where resources will be created"
   type        = string
-  default     = null
 }
 
 
@@ -18,6 +16,7 @@ variable "resource_group_name" {
 variable "virtual_network" {
   type = object({
     is_existing         = optional(bool, false)
+    id                  = string
     name                = string
     resource_group_name = string
     address_space       = optional(list(string), [])
@@ -44,47 +43,23 @@ variable "existing_dns_zone_resource_group_name" {
   default     = null
 }
 
-# variable "existing_vnet_name" {
-#   description = "Name of existing VNet to use. If provided, virtual_network name will be ignored and no new VNet will be created."
-#   type        = string
-#   default     = null
-# }
-
-# variable "existing_vnet_subnet_name" {
-#   description = "Name of existing subnet to use. If provided, virtual_network subnet will be ignored and no new subnet will be created."
-#   type        = string
-#   default     = null
-# }
-
-# variable "existing_vnet_resource_group_name" {
-#   description = "Resource group name of the existing VNet. Required when existing_vnet_id is provided."
-#   type        = string
-#   default     = null
-# }
-
-# variable "vnet_peerings" {
-#   description = "List of virtual network IDs to peer to. Don't forget to add this network on the other side of the peering."
-#   type        = list(string)
-#   default     = []
-# }
-
-
 ################################################
 # Cluster Variables
 ################################################
 # Required variables
 variable "domain_name" {
-  description = "The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains."
+  description = "(Optional) The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains."
   type        = string
+  default     = ""
 }
 
 variable "kubernetes_version" {
-  description = "The Kubernetes version to use."
+  description = "(Required) The Kubernetes version to use."
   type        = string
 }
 
 variable "name" {
-  description = "The name of the AKS cluster."
+  description = "(Required) The name of the AKS cluster."
   type        = string
 }
 
@@ -223,6 +198,12 @@ variable "oidc_issuer_enabled" {
 variable "private_cluster_enabled" {
   type    = bool
   default = false
+}
+
+variable "private_dns_zone_id" {
+  description = "ID of the private DNS zone to use for the AKS cluster. Required if private_cluster_enabled is true."
+  type        = string
+  default     = null
 }
 
 variable "sku_tier" {

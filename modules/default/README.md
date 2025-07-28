@@ -12,7 +12,7 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.35.0 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.37.0 |
 
 ## Modules
 
@@ -33,10 +33,12 @@ No modules.
 | [azurerm_public_ip.egress_ipv4](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) | resource |
 | [azurerm_public_ip.ingress_ipv4](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) | resource |
 | [azurerm_resource_group.default](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) | resource |
-| [azurerm_role_assignment.aks_network_contributor](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
+| [azurerm_role_assignment.aks_identity_network_contributor](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
+| [azurerm_role_assignment.aks_identity_private_dns_zone_contributor](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_role_assignment.cert_manager_dns_zone_contributor](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_storage_account.default](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) | resource |
 | [azurerm_subnet.default](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) | resource |
+| [azurerm_user_assigned_identity.aks_identity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) | resource |
 | [azurerm_user_assigned_identity.cert_manager](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) | resource |
 | [azurerm_virtual_network.default](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) | resource |
 | [azurerm_virtual_network_peering.default](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) | resource |
@@ -52,24 +54,25 @@ No modules.
 | <a name="input_automatic_upgrade_channel"></a> [automatic\_upgrade\_channel](#input\_automatic\_upgrade\_channel) | The automatic upgrade channel for the AKS cluster. | `string` | `"patch"` | no |
 | <a name="input_create_dns_records"></a> [create\_dns\_records](#input\_create\_dns\_records) | Whether to create DNS A records. Set to false if you want to manage DNS records separately. | `bool` | `true` | no |
 | <a name="input_dns_prefix"></a> [dns\_prefix](#input\_dns\_prefix) | The DNS prefix for the AKS cluster. This will be used to create the DNS records. | `string` | `null` | no |
-| <a name="input_domain_name"></a> [domain\_name](#input\_domain\_name) | The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains. | `string` | n/a | yes |
+| <a name="input_domain_name"></a> [domain\_name](#input\_domain\_name) | (Optional) The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains. | `string` | `""` | no |
 | <a name="input_existing_dns_zone_id"></a> [existing\_dns\_zone\_id](#input\_existing\_dns\_zone\_id) | ID of existing DNS zone to use. If provided, domain\_name will only be used for validation and no new DNS zone will be created. | `string` | `null` | no |
 | <a name="input_existing_dns_zone_resource_group_name"></a> [existing\_dns\_zone\_resource\_group\_name](#input\_existing\_dns\_zone\_resource\_group\_name) | Resource group name of the existing DNS zone. Required when existing\_dns\_zone\_id is provided. | `string` | `null` | no |
 | <a name="input_existing_log_analytics_workspace_id"></a> [existing\_log\_analytics\_workspace\_id](#input\_existing\_log\_analytics\_workspace\_id) | ID of existing Log Analytics workspace to use for AKS monitoring. If not provided, a new workspace will be created. | `string` | `null` | no |
 | <a name="input_image_cleaner_enabled"></a> [image\_cleaner\_enabled](#input\_image\_cleaner\_enabled) | Enable image cleaner to remove unused images from the AKS cluster | `bool` | `true` | no |
 | <a name="input_image_cleaner_interval_hours"></a> [image\_cleaner\_interval\_hours](#input\_image\_cleaner\_interval\_hours) | Interval in hours for the image cleaner to run | `number` | `48` | no |
 | <a name="input_internal_loadbalancer_ip"></a> [internal\_loadbalancer\_ip](#input\_internal\_loadbalancer\_ip) | The loadbalancer IP address of the internal ingress controller. | `string` | `""` | no |
-| <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | The Kubernetes version to use. | `string` | n/a | yes |
+| <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | (Required) The Kubernetes version to use. | `string` | n/a | yes |
 | <a name="input_loadbalancer_ips"></a> [loadbalancer\_ips](#input\_loadbalancer\_ips) | The loadbalancer IP address(es) of the public ingress controller. If not provided, an azurerm\_public\_ip will be created. | `list(string)` | `[]` | no |
-| <a name="input_location"></a> [location](#input\_location) | Azure region of the resources | `string` | `"westeurope"` | no |
-| <a name="input_name"></a> [name](#input\_name) | The name of the AKS cluster. | `string` | n/a | yes |
+| <a name="input_location"></a> [location](#input\_location) | (Required) Azure region of the resources | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | (Required) The name of the AKS cluster. | `string` | n/a | yes |
 | <a name="input_network_profile"></a> [network\_profile](#input\_network\_profile) | Network configuration for the AKS cluster. Uses Haven-compliant defaults if not specified. | <pre>object({<br>    network_plugin    = optional(string, "azure")<br>    network_policy    = optional(string, "calico")<br>    load_balancer_sku = optional(string, "standard")<br>    ip_versions       = optional(list(string), ["IPv4"])<br>  })</pre> | <pre>{<br>  "ip_versions": [<br>    "IPv4"<br>  ],<br>  "load_balancer_sku": "standard",<br>  "network_plugin": "azure",<br>  "network_policy": "calico"<br>}</pre> | no |
 | <a name="input_oidc_issuer_enabled"></a> [oidc\_issuer\_enabled](#input\_oidc\_issuer\_enabled) | Enable OIDC issuer for the AKS cluster | `bool` | `true` | no |
 | <a name="input_private_cluster_enabled"></a> [private\_cluster\_enabled](#input\_private\_cluster\_enabled) | n/a | `bool` | `false` | no |
-| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Name of the resource group where resources will be created | `string` | `null` | no |
+| <a name="input_private_dns_zone_id"></a> [private\_dns\_zone\_id](#input\_private\_dns\_zone\_id) | ID of the private DNS zone to use for the AKS cluster. Required if private\_cluster\_enabled is true. | `string` | `null` | no |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | (Required) Name of the resource group where resources will be created | `string` | n/a | yes |
 | <a name="input_sku_tier"></a> [sku\_tier](#input\_sku\_tier) | The SKU tier for the AKS cluster. Standard is recommended for production Haven clusters. | `string` | `"Standard"` | no |
 | <a name="input_storage_profile"></a> [storage\_profile](#input\_storage\_profile) | n/a | <pre>object({<br>    blob_driver_enabled         = bool<br>    disk_driver_enabled         = bool<br>    file_driver_enabled         = bool<br>    snapshot_controller_enabled = bool<br>  })</pre> | <pre>{<br>  "blob_driver_enabled": false,<br>  "disk_driver_enabled": true,<br>  "file_driver_enabled": true,<br>  "snapshot_controller_enabled": true<br>}</pre> | no |
-| <a name="input_virtual_network"></a> [virtual\_network](#input\_virtual\_network) | ############################################ Networking Variables ############################################ Required variables | <pre>object({<br>    is_existing         = optional(bool, false)<br>    name                = string<br>    resource_group_name = string<br>    address_space       = optional(list(string), [])<br>    peerings            = optional(list(string), [])<br>    subnet = optional(object({<br>      is_existing       = optional(bool, false)<br>      name              = string<br>      address_prefixes  = optional(list(string), [])<br>      service_endpoints = optional(list(string), ["Microsoft.Storage", "Microsoft.KeyVault", "Microsoft.ContainerRegistry"])<br>    }))<br>  })</pre> | n/a | yes |
+| <a name="input_virtual_network"></a> [virtual\_network](#input\_virtual\_network) | ############################################ Networking Variables ############################################ Required variables | <pre>object({<br>    is_existing         = optional(bool, false)<br>    id                  = string<br>    name                = string<br>    resource_group_name = string<br>    address_space       = optional(list(string), [])<br>    peerings            = optional(list(string), [])<br>    subnet = optional(object({<br>      is_existing       = optional(bool, false)<br>      name              = string<br>      address_prefixes  = optional(list(string), [])<br>      service_endpoints = optional(list(string), ["Microsoft.Storage", "Microsoft.KeyVault", "Microsoft.ContainerRegistry"])<br>    }))<br>  })</pre> | n/a | yes |
 | <a name="input_workload_autoscaler_profile"></a> [workload\_autoscaler\_profile](#input\_workload\_autoscaler\_profile) | n/a | <pre>object({<br>    keda_enabled                    = bool<br>    vertical_pod_autoscaler_enabled = bool<br>  })</pre> | <pre>{<br>  "keda_enabled": false,<br>  "vertical_pod_autoscaler_enabled": false<br>}</pre> | no |
 | <a name="input_workload_identity_enabled"></a> [workload\_identity\_enabled](#input\_workload\_identity\_enabled) | Enable workload identity for the AKS cluster | `bool` | `true` | no |
 

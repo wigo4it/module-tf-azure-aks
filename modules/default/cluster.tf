@@ -1,4 +1,33 @@
+resource "azurerm_user_assigned_identity" "aks_identity" {
+  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+
+  name                = "${var.name}-identity"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.default.name
+}
+
+resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
+  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+
+  scope                = var.private_dns_zone_id
+  role_definition_name = "Private DNS Zone Contributor"
+  principal_id         = azurerm_user_assigned_identity.aks_identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "aks_identity_network_contributor" {
+  count = var.private_cluster_enabled ? 1 : 0
+
+  scope                = var.virtual_network.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_user_assigned_identity.aks_identity[0].principal_id
+}
+
 resource "azurerm_kubernetes_cluster" "default" {
+  depends_on = [
+    azurerm_role_assignment.aks_identity_private_dns_zone_contributor,
+    azurerm_role_assignment.aks_identity_network_contributor
+  ]
+
   name                         = var.name
   location                     = var.location
   resource_group_name          = azurerm_resource_group.default.name
@@ -8,6 +37,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   node_resource_group          = "${azurerm_resource_group.default.name}-nodes"
   sku_tier                     = var.sku_tier
   private_cluster_enabled      = var.private_cluster_enabled
+  private_dns_zone_id          = var.private_dns_zone_id
   image_cleaner_enabled        = var.image_cleaner_enabled
   image_cleaner_interval_hours = var.image_cleaner_interval_hours
 
@@ -61,7 +91,8 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   identity {
-    type = "SystemAssigned" # ?? Should this be "SystemAssigned, UserAssigned"?
+    type         = var.private_cluster_enabled ? "UserAssigned" : "SystemAssigned"
+    identity_ids = var.private_cluster_enabled ? [azurerm_user_assigned_identity.aks_identity[0].id] : []
   }
 
   # workload identity
@@ -73,8 +104,11 @@ resource "azurerm_kubernetes_cluster" "default" {
     vertical_pod_autoscaler_enabled = var.workload_autoscaler_profile != null ? var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled : false
   }
 
-  api_server_access_profile {
-    authorized_ip_ranges = var.aks_authorized_ip_ranges
+  dynamic "api_server_access_profile" {
+    for_each = var.private_cluster_enabled ? [] : ["enabled"]
+    content {
+      authorized_ip_ranges = var.aks_authorized_ip_ranges
+    }
   }
 
   storage_profile {
@@ -97,11 +131,4 @@ resource "azurerm_kubernetes_cluster" "default" {
       kubernetes_version
     ]
   }
-}
-
-# ?? why is this needed?
-resource "azurerm_role_assignment" "aks_network_contributor" {
-  scope                = azurerm_resource_group.default.id
-  role_definition_name = "Network Contributor"
-  principal_id         = azurerm_kubernetes_cluster.default.identity[0].principal_id
 }

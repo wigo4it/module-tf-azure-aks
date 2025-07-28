@@ -5,20 +5,20 @@
 module "haven" {
   source = "../../modules/default"
 
-  name        = "aks-${var.cluster_name}"
-  domain_name = "haven-test.example.com" # Use static domain name
+  name                = "aks-${var.cluster_name}"
+  domain_name         = "haven-test.example.com" # Use static domain name
+  location            = var.location
+  resource_group_name = "rg-560x-${var.cluster_name}-${each.key}"
 
   virtual_network = {
     is_existing         = true
+    id                  = azurerm_virtual_network.networking.id
     name                = azurerm_virtual_network.networking.name
     resource_group_name = azurerm_resource_group.networking.name
     subnet = {
       name = azurerm_subnet.networking.name
     }
   }
-
-  # Location configuration
-  location = var.location
 
   # Network profile configuration
   network_profile = {
