@@ -15,10 +15,6 @@ output "cluster_oidc_issuer_url" {
   value = azurerm_kubernetes_cluster.default.oidc_issuer_url
 }
 
-output "cluster_storage_account_name" {
-  value = azurerm_storage_account.default.name
-}
-
 output "load_balancer_ips" {
   value = azurerm_public_ip.ingress_ipv4[*].ip_address
 }

@@ -16,7 +16,7 @@ variable "resource_group_name" {
 variable "virtual_network" {
   type = object({
     is_existing         = optional(bool, false)
-    id                  = string
+    id                  = optional(string)
     name                = string
     resource_group_name = string
     address_space       = optional(list(string), [])
@@ -28,31 +28,20 @@ variable "virtual_network" {
       service_endpoints = optional(list(string), ["Microsoft.Storage", "Microsoft.KeyVault", "Microsoft.ContainerRegistry"])
     }))
   })
-}
 
-# Optional variables
-variable "existing_dns_zone_id" {
-  description = "ID of existing DNS zone to use. If provided, domain_name will only be used for validation and no new DNS zone will be created."
-  type        = string
-  default     = null
-}
-
-variable "existing_dns_zone_resource_group_name" {
-  description = "Resource group name of the existing DNS zone. Required when existing_dns_zone_id is provided."
-  type        = string
-  default     = null
+  validation {
+    condition = (
+      (try(var.virtual_network.is_existing, false) == false) ||
+      (try(var.virtual_network.is_existing, false) == true && try(var.virtual_network.id, "") != "")
+    )
+    error_message = "When 'virtual_network.is_existing' is true, 'virtual_network.id' must be provided."
+  }
 }
 
 ################################################
 # Cluster Variables
 ################################################
 # Required variables
-variable "domain_name" {
-  description = "(Optional) The domain name for the cluster to use. A wildcard DNS record will be created for all subdomains."
-  type        = string
-  default     = ""
-}
-
 variable "kubernetes_version" {
   description = "(Required) The Kubernetes version to use."
   type        = string
@@ -137,12 +126,6 @@ variable "automatic_upgrade_channel" {
   default     = "patch"
 }
 
-variable "create_dns_records" {
-  description = "Whether to create DNS A records. Set to false if you want to manage DNS records separately."
-  type        = bool
-  default     = true
-}
-
 variable "dns_prefix" {
   description = "The DNS prefix for the AKS cluster. This will be used to create the DNS records."
   type        = string
@@ -159,12 +142,6 @@ variable "image_cleaner_interval_hours" {
   description = "Interval in hours for the image cleaner to run"
   type        = number
   default     = 48
-}
-
-variable "internal_loadbalancer_ip" {
-  description = "The loadbalancer IP address of the internal ingress controller."
-  type        = string
-  default     = ""
 }
 
 variable "loadbalancer_ips" {
@@ -257,7 +234,7 @@ variable "existing_log_analytics_workspace_id" {
 variable "tags" {
   description = "A map of tags to assign to all resources"
   type        = map(string)
-  default     = {
+  default = {
     deployment_method = "terraform"
     module_name       = "module-haven-cluster-azure-digilab"
   }

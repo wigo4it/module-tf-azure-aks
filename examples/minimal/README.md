@@ -12,7 +12,7 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.35.0 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.37.0 |
 
 ## Modules
 
@@ -35,7 +35,6 @@
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the AKS cluster | `string` | n/a | yes |
 | <a name="input_default_node_pool_node_count"></a> [default\_node\_pool\_node\_count](#input\_default\_node\_pool\_node\_count) | Number of nodes in the default node pool (ignored if auto-scaling is enabled) | `number` | n/a | yes |
 | <a name="input_default_node_pool_vm_size"></a> [default\_node\_pool\_vm\_size](#input\_default\_node\_pool\_vm\_size) | VM size for the default node pool | `string` | n/a | yes |
-| <a name="input_domain_name"></a> [domain\_name](#input\_domain\_name) | Domain name for the cluster (a DNS zone will be created) | `string` | n/a | yes |
 | <a name="input_enable_auto_scaling"></a> [enable\_auto\_scaling](#input\_enable\_auto\_scaling) | Enable auto-scaling for the default node pool | `bool` | n/a | yes |
 | <a name="input_enable_keda"></a> [enable\_keda](#input\_enable\_keda) | Enable KEDA (Kubernetes-based Event Driven Autoscaling) | `bool` | n/a | yes |
 | <a name="input_enable_vpa"></a> [enable\_vpa](#input\_enable\_vpa) | Enable VPA (Vertical Pod Autoscaler) | `bool` | n/a | yes |
@@ -54,11 +53,8 @@
 
 | Name | Description |
 |------|-------------|
-| <a name="output_cert_manager_managed_identity_client_id"></a> [cert\_manager\_managed\_identity\_client\_id](#output\_cert\_manager\_managed\_identity\_client\_id) | Client ID of the managed identity for cert-manager |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | Name of the AKS cluster |
 | <a name="output_cluster_oidc_issuer_url"></a> [cluster\_oidc\_issuer\_url](#output\_cluster\_oidc\_issuer\_url) | OIDC issuer URL for the cluster (useful for workload identity) |
-| <a name="output_cluster_storage_account_name"></a> [cluster\_storage\_account\_name](#output\_cluster\_storage\_account\_name) | Name of the storage account created for the cluster |
-| <a name="output_dns_zone_name"></a> [dns\_zone\_name](#output\_dns\_zone\_name) | Name of the DNS zone created for the cluster |
 | <a name="output_load_balancer_ips"></a> [load\_balancer\_ips](#output\_load\_balancer\_ips) | Load balancer IP addresses |
 | <a name="output_resource_group_location"></a> [resource\_group\_location](#output\_resource\_group\_location) | Location of the resource group |
 | <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | Name of the resource group containing the AKS cluster |

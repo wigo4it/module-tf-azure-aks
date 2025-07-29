@@ -1,8 +1,10 @@
 # Local .terraform directories and files
 **/.terraform/*
-**/.terraform.lock.hcl
 **/planfile*
 tfplan
+
+# no lock.hcl file for the module
+/modules/default/.terraform.lock.hcl
 
 # .tfstate files
 *.tfstate

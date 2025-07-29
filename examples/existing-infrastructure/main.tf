@@ -6,9 +6,8 @@ module "haven" {
   source = "../../modules/default"
 
   name                = "aks-${var.cluster_name}"
-  domain_name         = "haven-test.example.com" # Use static domain name
   location            = var.location
-  resource_group_name = "rg-560x-${var.cluster_name}-${each.key}"
+  resource_group_name = "rg-560x-${var.cluster_name}"
 
   virtual_network = {
     is_existing         = true
@@ -16,7 +15,8 @@ module "haven" {
     name                = azurerm_virtual_network.networking.name
     resource_group_name = azurerm_resource_group.networking.name
     subnet = {
-      name = azurerm_subnet.networking.name
+      is_existing = true
+      name        = azurerm_subnet.networking.name
     }
   }
 
@@ -44,12 +44,6 @@ module "haven" {
 
   # Optional: Configure load balancer IPs if you have specific requirements
   loadbalancer_ips = var.loadbalancer_ips
-
-  # Optional: Configure internal load balancer
-  internal_loadbalancer_ip = var.internal_loadbalancer_ip
-
-  # Optional: Disable DNS record creation if you want to manage them separately
-  create_dns_records = var.create_dns_records
 
   # Optional: Configure private cluster
   private_cluster_enabled = var.private_cluster_enabled
