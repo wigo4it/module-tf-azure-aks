@@ -5,32 +5,6 @@ variable "location" {
   default     = "westeurope"
 }
 
-# # Variables for existing infrastructure
-# variable "existing_vnet_name" {
-#   description = "Name of the existing VNet to use"
-#   type        = string
-# }
-
-# variable "existing_vnet_resource_group_name" {
-#   description = "Resource group name where the existing VNet is located"
-#   type        = string
-# }
-
-# variable "existing_subnet_name" {
-#   description = "Name of the existing subnet to use for AKS nodes"
-#   type        = string
-# }
-
-# variable "existing_dns_zone_name" {
-#   description = "Name of the existing DNS zone to use"
-#   type        = string
-# }
-
-# variable "existing_dns_zone_resource_group_name" {
-#   description = "Resource group name where the existing DNS zone is located"
-#   type        = string
-# }
-
 # Cluster configuration
 variable "cluster_name" {
   description = "Name of the AKS cluster"
@@ -104,18 +78,6 @@ variable "loadbalancer_ips" {
   description = "Specific load balancer IP addresses to use (if any)"
   type        = list(string)
   default     = []
-}
-
-variable "internal_loadbalancer_ip" {
-  description = "Internal load balancer IP address"
-  type        = string
-  default     = ""
-}
-
-variable "create_dns_records" {
-  description = "Whether to create DNS A records in the existing DNS zone"
-  type        = bool
-  default     = true
 }
 
 variable "private_cluster_enabled" {

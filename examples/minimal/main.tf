@@ -30,9 +30,8 @@ module "haven" {
   source = "../../modules/default"
 
   # Basic cluster identification
-  name        = var.cluster_name
-  domain_name = var.domain_name
-  location    = var.location
+  name                = var.cluster_name
+  location            = var.location
   resource_group_name = "rg-${var.cluster_name}"
 
   virtual_network = {

@@ -31,7 +31,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   name                         = var.name
   location                     = var.location
   resource_group_name          = azurerm_resource_group.default.name
-  dns_prefix                   = coalesce(var.dns_prefix, "aks-${var.name}")
+  dns_prefix                   = coalesce(var.dns_prefix, var.name)
   kubernetes_version           = var.kubernetes_version
   automatic_upgrade_channel    = var.automatic_upgrade_channel
   node_resource_group          = "${azurerm_resource_group.default.name}-nodes"

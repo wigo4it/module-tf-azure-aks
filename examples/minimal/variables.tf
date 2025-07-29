@@ -6,11 +6,6 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "domain_name" {
-  description = "Domain name for the cluster (a DNS zone will be created)"
-  type        = string
-}
-
 # Location with European default
 variable "location" {
   description = "Azure region for the cluster"

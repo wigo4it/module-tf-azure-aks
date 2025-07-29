@@ -199,7 +199,6 @@ cd examples
 ```hcl
 # Basic cluster configuration
 cluster_name       = "my-aks-cluster"
-domain_name        = "myapp.example.com"
 location           = "westeurope"
 
 # Node pool settings

@@ -3,7 +3,6 @@
 
 # Basic cluster configuration
 cluster_name = "haven-cluster"
-domain_name  = "haven.example.com"
 location     = "West Europe"
 
 # Network configuration with reasonable defaults

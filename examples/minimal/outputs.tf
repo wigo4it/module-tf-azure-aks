@@ -18,27 +18,12 @@ output "cluster_oidc_issuer_url" {
   value       = module.haven.cluster_oidc_issuer_url
 }
 
-output "cluster_storage_account_name" {
-  description = "Name of the storage account created for the cluster"
-  value       = module.haven.cluster_storage_account_name
-}
-
 output "load_balancer_ips" {
   description = "Load balancer IP addresses"
   value       = module.haven.load_balancer_ips
 }
 
-output "dns_zone_name" {
-  description = "Name of the DNS zone created for the cluster"
-  value       = module.haven.dns_zone_name
-}
-
 output "subnet_id" {
   description = "ID of the subnet created for the cluster"
   value       = module.haven.subnet_id
-}
-
-output "cert_manager_managed_identity_client_id" {
-  description = "Client ID of the managed identity for cert-manager"
-  value       = module.haven.cert_manager_managed_identity_client_id
 }
