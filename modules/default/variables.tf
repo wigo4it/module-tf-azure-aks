@@ -253,3 +253,12 @@ variable "existing_log_analytics_workspace_id" {
   type        = string
   default     = null
 }
+
+variable "tags" {
+  description = "A map of tags to assign to all resources"
+  type        = map(string)
+  default     = {
+    deployment_method = "terraform"
+    module_name       = "module-haven-cluster-azure-digilab"
+  }
+}

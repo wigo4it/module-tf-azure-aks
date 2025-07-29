@@ -23,16 +23,6 @@ output "load_balancer_ips" {
   value = azurerm_public_ip.ingress_ipv4[*].ip_address
 }
 
-# output "dns_zone_name" {
-#   value = local.dns_zone_name
-# }
-
 output "subnet_id" {
   value = local.subnet_id
 }
-
-# output "cert_manager_managed_identity_client_id" {
-#   description = "Value for managedIdentity: clientID in ClusterIssuer"
-#   value       = azurerm_user_assigned_identity.cert_manager.client_id
-#   sensitive   = true
-# }
