@@ -1,18 +1,18 @@
 resource "azurerm_user_assigned_identity" "aks_identity" {
-  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+  count = 1 # var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
 
   name                = "id-${var.name}"
   location            = var.location
   resource_group_name = azurerm_resource_group.default.name
 }
 
-resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
-  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+# resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
+#   count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
 
-  scope                = var.private_dns_zone_id
-  role_definition_name = "Private DNS Zone Contributor"
-  principal_id         = azurerm_user_assigned_identity.aks_identity[0].principal_id
-}
+#   scope                = var.private_dns_zone_id
+#   role_definition_name = "Private DNS Zone Contributor"
+#   principal_id         = azurerm_user_assigned_identity.aks_identity[0].principal_id
+# }
 
 resource "azurerm_role_assignment" "aks_identity_network_contributor" {
   count = var.private_cluster_enabled ? 1 : 0
@@ -24,7 +24,7 @@ resource "azurerm_role_assignment" "aks_identity_network_contributor" {
 
 resource "azurerm_kubernetes_cluster" "default" {
   depends_on = [
-    azurerm_role_assignment.aks_identity_private_dns_zone_contributor,
+    #azurerm_role_assignment.aks_identity_private_dns_zone_contributor,
     azurerm_role_assignment.aks_identity_network_contributor
   ]
 
@@ -37,7 +37,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   node_resource_group          = "${azurerm_resource_group.default.name}-nodes"
   sku_tier                     = var.sku_tier
   private_cluster_enabled      = var.private_cluster_enabled
-  private_dns_zone_id          = var.private_dns_zone_id
+  private_dns_zone_id          = null #var.private_dns_zone_id
   image_cleaner_enabled        = var.image_cleaner_enabled
   image_cleaner_interval_hours = var.image_cleaner_interval_hours
 
