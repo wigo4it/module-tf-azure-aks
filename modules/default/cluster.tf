@@ -25,7 +25,6 @@ resource "azurerm_role_assignment" "aks_identity_network_contributor" {
 
 resource "azurerm_kubernetes_cluster" "default" {
   depends_on = [
-    #azurerm_role_assignment.aks_identity_private_dns_zone_contributor,
     azurerm_role_assignment.aks_identity_network_contributor
   ]
 
