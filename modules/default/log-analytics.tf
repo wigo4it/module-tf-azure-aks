@@ -6,11 +6,7 @@ resource "azurerm_log_analytics_workspace" "default" {
   resource_group_name = azurerm_resource_group.default.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
-
-  tags = {
-    Environment = "haven"
-    Purpose     = "aks-monitoring"
-  }
+  tags                = var.tags
 }
 
 # Local value to determine which Log Analytics workspace ID to use
