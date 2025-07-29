@@ -7,4 +7,5 @@ resource "azurerm_storage_account" "default" {
   account_replication_type = "LRS"
   account_tier             = "Standard"
   access_tier              = "Cool"
+  tags                     = var.tags
 }

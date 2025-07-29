@@ -8,4 +8,5 @@ resource "azurerm_public_ip" "egress_ipv4" {
   allocation_method   = "Static"
   sku                 = "Standard"
   zones               = ["1", "2", "3"]
+  tags                = var.tags
 }

@@ -4,6 +4,7 @@ resource "azurerm_user_assigned_identity" "aks_identity" {
   name                = "id-${var.name}"
   location            = var.location
   resource_group_name = azurerm_resource_group.default.name
+  tags                = var.tags
 }
 
 resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
@@ -40,7 +41,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   private_dns_zone_id          = var.private_dns_zone_id
   image_cleaner_enabled        = var.image_cleaner_enabled
   image_cleaner_interval_hours = var.image_cleaner_interval_hours
-
+  tags                         = var.tags
   # Enable RBAC for security compliance
   role_based_access_control_enabled = true
 

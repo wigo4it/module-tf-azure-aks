@@ -21,6 +21,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
   min_count              = each.value.cluster_auto_scaling_min_count
   max_count              = each.value.cluster_auto_scaling_max_count
   node_public_ip_enabled = each.value.node_public_ip_enabled
+  tags                   = var.tags
 
   lifecycle {
     ignore_changes = [node_count]

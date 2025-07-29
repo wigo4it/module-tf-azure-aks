@@ -14,6 +14,7 @@ resource "azurerm_virtual_network" "default" {
   resource_group_name = azurerm_resource_group.default.name
   address_space       = var.virtual_network.address_space
   location            = azurerm_resource_group.default.location
+  tags                = var.tags
 }
 
 # Create subnet only if existing subnet is not provided
