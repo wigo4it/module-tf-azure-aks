@@ -31,8 +31,8 @@ output "subnet_id" {
   value = local.subnet_id
 }
 
-output "cert_manager_managed_identity_client_id" {
-  description = "Value for managedIdentity: clientID in ClusterIssuer"
-  value       = azurerm_user_assigned_identity.cert_manager.client_id
-  sensitive   = true
-}
+# output "cert_manager_managed_identity_client_id" {
+#   description = "Value for managedIdentity: clientID in ClusterIssuer"
+#   value       = azurerm_user_assigned_identity.cert_manager.client_id
+#   sensitive   = true
+# }
