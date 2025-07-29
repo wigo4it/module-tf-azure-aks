@@ -15,7 +15,7 @@ resource "azurerm_user_assigned_identity" "aks_identity" {
 # }
 
 resource "azurerm_role_assignment" "aks_identity_network_contributor" {
-  count = var.private_cluster_enabled ? 1 : 0
+  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
 
   scope                = var.virtual_network.id
   role_definition_name = "Network Contributor"
