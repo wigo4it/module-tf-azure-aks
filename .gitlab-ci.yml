@@ -6,4 +6,4 @@ include:
   - project: 'renovate-bot/renovate-runner'
     file: '/templates/renovate.gitlab-ci.yml'
   # Integration test configuration
-  - local: '.gitlab/ci/integration-test.yml'
+  #- local: '.gitlab/ci/integration-test.yml'

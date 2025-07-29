@@ -14,4 +14,3 @@ private_cluster_enabled = false
 sku_tier                = "Free"
 enable_keda             = false
 enable_vpa              = false
-create_dns_records      = true
