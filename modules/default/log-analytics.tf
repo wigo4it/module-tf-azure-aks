@@ -10,6 +10,7 @@ resource "azurerm_log_analytics_workspace" "default" {
   tags = {
     Environment = "haven"
     Purpose     = "aks-monitoring"
+    # ToDo: overall tags toevoegen, en dan als variable doorgeven vanuit de root module
   }
 }
 
