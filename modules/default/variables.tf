@@ -132,6 +132,12 @@ variable "aks_azure_active_directory_role_based_access_control" {
   default = null
 }
 
+variable "azure_policy_enabled" {
+  description = "(Optional) Should the Azure Policy Add-On be enabled? For more details please visit Understand Azure Policy for Azure Kubernetes Service. Defaults to true."
+  type        = bool
+  default     = true
+}
+
 variable "disk_encryption_set_id" {
   description = "(Optional) The ID of the Disk Encryption Set which should be used for the Nodes and Volumes. More information can be found in the documentation."
   type        = string
@@ -163,6 +169,12 @@ variable "dns_prefix" {
   description = "(Optional) The DNS prefix for the AKS cluster. This will be used to create the DNS records."
   type        = string
   default     = null
+}
+
+variable "microsoft_defender_enabled" {
+  description = "(Optional) Enable Microsoft Defender for Containers"
+  type        = bool
+  default     = false
 }
 
 variable "existing_log_analytics_workspace_id" {

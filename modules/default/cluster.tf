@@ -24,6 +24,7 @@ resource "azurerm_role_assignment" "aks_identity_network_contributor" {
 }
 
 resource "azurerm_kubernetes_cluster" "default" {
+  azure_policy_enabled              = var.azure_policy_enabled
   automatic_upgrade_channel         = var.automatic_upgrade_channel
   depends_on                        = [azurerm_role_assignment.aks_identity_network_contributor]
   disk_encryption_set_id            = var.disk_encryption_set_id
@@ -127,6 +128,13 @@ resource "azurerm_kubernetes_cluster" "default" {
   oms_agent {
     log_analytics_workspace_id      = local.log_analytics_workspace_id
     msi_auth_for_monitoring_enabled = true
+  }
+
+  dynamic "microsoft_defender" {
+    for_each = var.microsoft_defender_enabled != null ? ["enabled"] : []
+    content {
+      log_analytics_workspace_id = local.log_analytics_workspace_id
+    }
   }
 
   # Key Vault Secrets Provider for enhanced secret management
