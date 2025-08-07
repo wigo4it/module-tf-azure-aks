@@ -24,10 +24,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
   tags                   = var.tags
 
   dynamic "upgrade_settings" {
-    for_each = var.aks_additional_node_pools.upgrade_settings != null ? ["enabled"] : []
+    for_each = each.value.upgrade_settings != null ? ["enabled"] : []
     content {
-      drain_timeout_in_minutes = var.aks_additional_node_pools.upgrade_settings.drain_timeout_in_minutes
-      max_surge                = var.aks_deaks_additional_node_poolsfault_node_pool.upgrade_settings.max_surge
+      drain_timeout_in_minutes = each.value.upgrade_settings.drain_timeout_in_minutes
+      max_surge                = each.value.upgrade_settings.max_surge
     }
   }
 
