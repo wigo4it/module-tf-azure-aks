@@ -2,6 +2,8 @@
 # This example demonstrates how to deploy an Azure Kubernetes Service (AKS) cluster
 # using existing networking and DNS infrastructure with the Haven Terraform module.
 
+data "azurerm_client_config" "current" {}
+
 module "haven" {
   source = "../../modules/default"
 
@@ -36,11 +38,18 @@ module "haven" {
     cluster_auto_scaling_enabled   = var.enable_auto_scaling
     cluster_auto_scaling_min_count = var.enable_auto_scaling ? var.min_node_count : null
     cluster_auto_scaling_max_count = var.enable_auto_scaling ? var.max_node_count : null
-    zones                          = ["3"]
+    zones                          = ["1", "3"]
   }
 
   # Optional: Add additional node pools
   aks_additional_node_pools = var.additional_node_pools
+
+  aks_azure_active_directory_role_based_access_control = {
+    admin_group_object_ids = [data.azurerm_client_config.current.object_id]
+    azure_rbac_enabled     = true
+  }
+
+  local_account_disabled = true
 
   # Optional: Configure load balancer IPs if you have specific requirements
   loadbalancer_ips = var.loadbalancer_ips
