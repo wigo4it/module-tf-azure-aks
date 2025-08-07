@@ -23,8 +23,8 @@ variable "aks_default_node_pool" {
     node_public_ip_enabled         = optional(bool, false)
     only_critical_addons_enabled   = optional(bool, false)
     upgrade_settings = optional(object({
-      drain_timeout_in_minutes = optional(number, 5)
-      max_surge                = optional(string, "10%")
+      drain_timeout_in_minutes = number
+      max_surge                = string
       }), {
       drain_timeout_in_minutes = 5
       max_surge                = "10%"
@@ -153,10 +153,13 @@ variable "enable_audit_logs" {
 variable "key_vault_secrets_provider" {
   description = "(Optional) Key Vault Secrets Provider configuration for enhanced secret management."
   type = object({
-    secret_rotation_enabled  = optional(bool, true)
-    secret_rotation_interval = optional(string, "2m")
+    secret_rotation_enabled  = bool
+    secret_rotation_interval = string
   })
-  default = null
+  default = {
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "2m"
+  }
 }
 
 variable "automatic_upgrade_channel" {
