@@ -131,7 +131,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   dynamic "microsoft_defender" {
-    for_each = var.microsoft_defender_enabled != null ? ["enabled"] : []
+    for_each = var.microsoft_defender_enabled ? ["enabled"] : []
     content {
       log_analytics_workspace_id = local.log_analytics_workspace_id
     }
