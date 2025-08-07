@@ -100,6 +100,13 @@ variable "aks_additional_node_pools" {
     cluster_auto_scaling_min_count = optional(number, null)
     cluster_auto_scaling_max_count = optional(number, null)
     node_public_ip_enabled         = optional(bool, false)
+    upgrade_settings = optional(object({
+      drain_timeout_in_minutes = number
+      max_surge                = string
+      }), {
+      drain_timeout_in_minutes = 5
+      max_surge                = "10%"
+    })
   }))
   default = {}
 }
