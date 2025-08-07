@@ -24,12 +24,15 @@ resource "azurerm_role_assignment" "aks_identity_network_contributor" {
 }
 
 resource "azurerm_kubernetes_cluster" "default" {
+  azure_policy_enabled              = var.azure_policy_enabled
   automatic_upgrade_channel         = var.automatic_upgrade_channel
   depends_on                        = [azurerm_role_assignment.aks_identity_network_contributor]
+  disk_encryption_set_id            = var.disk_encryption_set_id
   dns_prefix                        = coalesce(var.dns_prefix, var.name)
   image_cleaner_enabled             = var.image_cleaner_enabled
   image_cleaner_interval_hours      = var.image_cleaner_interval_hours
   kubernetes_version                = var.kubernetes_version
+  local_account_disabled            = var.local_account_disabled
   location                          = var.location
   name                              = var.name
   node_resource_group               = "${azurerm_resource_group.default.name}-nodes"
@@ -41,7 +44,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   sku_tier                          = var.sku_tier
   tags                              = var.tags
   workload_identity_enabled         = var.workload_identity_enabled
-  local_account_disabled            = var.local_account_disabled
+
 
   # Azure Monitor for container metrics (security compliance)
   monitor_metrics {
@@ -68,11 +71,19 @@ resource "azurerm_kubernetes_cluster" "default" {
     zones = var.aks_default_node_pool.zones
 
     dynamic "upgrade_settings" {
-      for_each = var.aks_default_node_pool.upgrade_settings != null ? [1] : []
+      for_each = var.aks_default_node_pool.upgrade_settings != null ? ["enabled"] : []
       content {
         drain_timeout_in_minutes = var.aks_default_node_pool.upgrade_settings.drain_timeout_in_minutes
         max_surge                = var.aks_default_node_pool.upgrade_settings.max_surge
       }
+    }
+  }
+  dynamic "azure_active_directory_role_based_access_control" {
+    for_each = var.aks_azure_active_directory_role_based_access_control != null ? ["enabled"] : []
+    content {
+      admin_group_object_ids = var.aks_azure_active_directory_role_based_access_control.admin_group_object_ids
+      azure_rbac_enabled     = var.aks_azure_active_directory_role_based_access_control.azure_rbac_enabled
+      tenant_id              = var.aks_azure_active_directory_role_based_access_control.tenant_id
     }
   }
 
@@ -119,11 +130,43 @@ resource "azurerm_kubernetes_cluster" "default" {
     msi_auth_for_monitoring_enabled = true
   }
 
+  dynamic "microsoft_defender" {
+    for_each = var.microsoft_defender_enabled != null ? ["enabled"] : []
+    content {
+      log_analytics_workspace_id = local.log_analytics_workspace_id
+    }
+  }
+
+  # Key Vault Secrets Provider for enhanced secret management
+  dynamic "key_vault_secrets_provider" {
+    for_each = var.key_vault_secrets_provider != null ? ["enabled"] : []
+    content {
+      secret_rotation_enabled  = var.key_vault_secrets_provider.secret_rotation_enabled
+      secret_rotation_interval = var.key_vault_secrets_provider.secret_rotation_interval
+    }
+  }
+
   lifecycle {
     ignore_changes = [
       default_node_pool[0].node_count,
       default_node_pool[0].upgrade_settings,
       kubernetes_version
     ]
+  }
+}
+
+# Diagnostic settings for audit logs (security compliance)
+resource "azurerm_monitor_diagnostic_setting" "aks_audit_logs" {
+  count = var.enable_audit_logs ? 1 : 0
+
+  name                       = "${var.name}-audit-logs"
+  target_resource_id         = azurerm_kubernetes_cluster.default.id
+  log_analytics_workspace_id = local.log_analytics_workspace_id
+
+  dynamic "enabled_log" {
+    for_each = var.aks_audit_categories
+    content {
+      category = enabled_log.value
+    }
   }
 }

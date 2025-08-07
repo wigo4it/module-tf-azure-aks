@@ -116,6 +116,49 @@ variable "aks_authorized_ip_ranges" {
   }
 }
 
+variable "aks_audit_categories" {
+  description = "(Optional) List of audit categories to enable for the AKS cluster. This is recommended for security compliance."
+  type        = list(string)
+  default     = ["kube-apiserver", "kube-audit", "kube-audit-admin", "kube-controller-manager", "kube-scheduler", "cluster-autoscaler", "guard", "csi-azuredisk-controller", "csi-azurefile-controller", "csi-snapshot-controller"]
+}
+
+variable "aks_azure_active_directory_role_based_access_control" {
+  description = "(Optional) Azure Active Directory integration for RBAC. Required when local_account_disabled is true."
+  type = object({
+    admin_group_object_ids = list(string)
+    azure_rbac_enabled     = bool
+    tenant_id              = optional(string)
+  })
+  default = null
+}
+
+variable "azure_policy_enabled" {
+  description = "(Optional) Should the Azure Policy Add-On be enabled? For more details please visit Understand Azure Policy for Azure Kubernetes Service. Defaults to true."
+  type        = bool
+  default     = true
+}
+
+variable "disk_encryption_set_id" {
+  description = "(Optional) The ID of the Disk Encryption Set which should be used for the Nodes and Volumes. More information can be found in the documentation."
+  type        = string
+  default     = null
+}
+
+variable "enable_audit_logs" {
+  description = "(Optional) Enable audit logs for security compliance. This is recommended for production clusters."
+  type        = bool
+  default     = true
+}
+
+variable "key_vault_secrets_provider" {
+  description = "(Optional) Key Vault Secrets Provider configuration for enhanced secret management."
+  type = object({
+    secret_rotation_enabled  = optional(bool, true)
+    secret_rotation_interval = optional(string, "2m")
+  })
+  default = null
+}
+
 variable "automatic_upgrade_channel" {
   description = "(Optional) The automatic upgrade channel for the AKS cluster."
   type        = string
@@ -126,6 +169,12 @@ variable "dns_prefix" {
   description = "(Optional) The DNS prefix for the AKS cluster. This will be used to create the DNS records."
   type        = string
   default     = null
+}
+
+variable "microsoft_defender_enabled" {
+  description = "(Optional) Enable Microsoft Defender for Containers"
+  type        = bool
+  default     = false
 }
 
 variable "existing_log_analytics_workspace_id" {
@@ -155,7 +204,18 @@ variable "loadbalancer_ips" {
 variable "local_account_disabled" {
   description = "(Optional) Disable local accounts for security compliance. This is recommended."
   type        = bool
-  default     = true
+  default     = false
+
+  validation {
+    condition = (
+      var.local_account_disabled == false ||
+      (var.local_account_disabled == true &&
+        var.aks_azure_active_directory_role_based_access_control != null &&
+        var.aks_azure_active_directory_role_based_access_control.azure_rbac_enabled == true &&
+      length(var.aks_azure_active_directory_role_based_access_control.admin_group_object_ids) > 0)
+    )
+    error_message = "When 'local_account_disabled' is true, 'aks_azure_active_directory_role_based_access_control' must be configured with 'azure_rbac_enabled' set to true and valid 'admin_group_object_ids'."
+  }
 }
 
 variable "network_profile" {
