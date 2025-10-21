@@ -23,7 +23,7 @@ output "subnet_id" {
   value = local.subnet_id
 }
 
-output "kube_config_raw" {
+output "kubeconfig_raw" {
   description = "Raw kubeconfig for the AKS cluster"
   value       = azurerm_kubernetes_cluster.default.kube_config_raw
   sensitive   = true
