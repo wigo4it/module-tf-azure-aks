@@ -8,7 +8,7 @@ output "resource_group_name" {
 }
 
 output "resource_group_location" {
-  value = azurerm_resource_group.default.location
+  value = var.location
 }
 
 output "cluster_oidc_issuer_url" {
