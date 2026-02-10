@@ -3,14 +3,6 @@ output "cluster_name" {
   value       = azurerm_kubernetes_cluster.default.name
 }
 
-output "resource_group_name" {
-  value = azurerm_resource_group.default.name
-}
-
-output "resource_group_location" {
-  value = azurerm_resource_group.default.location
-}
-
 output "cluster_oidc_issuer_url" {
   value = azurerm_kubernetes_cluster.default.oidc_issuer_url
 }

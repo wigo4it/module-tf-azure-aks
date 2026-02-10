@@ -1,9 +1,0 @@
-variables:
-  RENOVATE_REPOSITORIES: $CI_PROJECT_PATH
-
-include:
-  # https://gitlab.com/gitlab-com/gl-infra/renovate/renovate-runner/-/blob/main/templates/renovate.gitlab-ci.yml?ref_type=heads
-  - project: 'renovate-bot/renovate-runner'
-    file: '/templates/renovate.gitlab-ci.yml'
-  # Integration test configuration
-  #- local: '.gitlab/ci/integration-test.yml'

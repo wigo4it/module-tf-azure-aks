@@ -11,9 +11,9 @@ resource "azurerm_virtual_network" "default" {
   count = var.virtual_network.is_existing ? 0 : 1
 
   name                = var.virtual_network.name
-  resource_group_name = azurerm_resource_group.default.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
   address_space       = var.virtual_network.address_space
-  location            = azurerm_resource_group.default.location
   tags                = var.tags
 }
 
@@ -22,7 +22,7 @@ resource "azurerm_subnet" "default" {
   count = var.virtual_network.subnet.is_existing ? 0 : 1
 
   name                 = var.virtual_network.subnet.name
-  resource_group_name  = var.virtual_network.is_existing ? var.virtual_network.resource_group_name : azurerm_resource_group.default.name
+  resource_group_name  = var.virtual_network.resource_group_name
   virtual_network_name = var.virtual_network.name
   address_prefixes     = var.virtual_network.subnet.address_prefixes
   service_endpoints    = var.virtual_network.subnet.service_endpoints
