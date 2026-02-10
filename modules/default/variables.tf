@@ -262,6 +262,12 @@ variable "private_dns_zone_id" {
   default     = null
 }
 
+variable "assign_private_dns_zone_rbac" {
+  description = "(Optional) Assign 'Private DNS Zone Contributor' to the UAI"
+  type        = bool
+  default     = false
+}
+
 variable "role_based_access_control_enabled" {
   description = "(Optional) Enable role-based access control (RBAC) for the AKS cluster. This is recommended for security compliance."
   type        = bool

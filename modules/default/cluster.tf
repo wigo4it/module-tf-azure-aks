@@ -1,3 +1,26 @@
+resource "azurerm_user_assigned_identity" "aks_identity" {
+  name                = "id-${var.name}"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  tags                = var.tags
+}
+
+resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
+  count = var.assign_private_dns_zone_rbac == true && var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+
+  scope                = var.private_dns_zone_id
+  role_definition_name = "Private DNS Zone Contributor"
+  principal_id         = azurerm_user_assigned_identity.aks_identity.principal_id
+}
+
+resource "azurerm_role_assignment" "aks_identity_network_contributor" {
+  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+
+  scope                = var.virtual_network.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_user_assigned_identity.aks_identity.principal_id
+}
+
 resource "azurerm_kubernetes_cluster" "default" {
   azure_policy_enabled              = var.azure_policy_enabled
   automatic_upgrade_channel         = var.automatic_upgrade_channel
@@ -75,8 +98,8 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   identity {
-    identity_ids = []
-    type         = "SystemAssigned"
+    identity_ids = [azurerm_user_assigned_identity.aks_identity.id]
+    type         = "UserAssigned"
   }
 
   workload_autoscaler_profile {
