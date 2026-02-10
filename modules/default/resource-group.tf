@@ -4,7 +4,7 @@ data azurerm_resource_group "default" {
 
 resource "azurerm_resource_group" "default" {
   count    = data.azurerm_resource_group.default.id == null ? 1 : 0
-  name     = var.resource_group_name
+  name     = var.resource_group_name[0]
   location = var.location
   tags     = var.tags
 }
