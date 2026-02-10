@@ -2,8 +2,8 @@
 resource "azurerm_log_analytics_workspace" "default" {
   count               = var.existing_log_analytics_workspace_id == null ? 1 : 0
   name                = "law-${var.name}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
+  location            = local.azurerm_resource_group_location
+  resource_group_name = local.azurerm_resource_group_name
   sku                 = "PerGB2018"
   retention_in_days   = 30
   tags                = var.tags

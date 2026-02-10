@@ -2,8 +2,8 @@ resource "azurerm_user_assigned_identity" "aks_identity" {
   count = 1 # var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
 
   name                = "id-${var.name}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
+  location            = local.azurerm_resource_group_location
+  resource_group_name = local.azurerm_resource_group_name
   tags                = var.tags
 }
 
@@ -33,13 +33,13 @@ resource "azurerm_kubernetes_cluster" "default" {
   image_cleaner_interval_hours      = var.image_cleaner_interval_hours
   kubernetes_version                = var.kubernetes_version
   local_account_disabled            = var.local_account_disabled
-  location                          = var.location
+  location                          = local.azurerm_resource_group_location
   name                              = var.name
-  node_resource_group               = "${var.resource_group_name}-nodes"
+  node_resource_group               = "${local.azurerm_resource_group_name}-nodes"
   oidc_issuer_enabled               = var.oidc_issuer_enabled
   private_cluster_enabled           = var.private_cluster_enabled
   private_dns_zone_id               = var.private_dns_zone_id
-  resource_group_name               = var.resource_group_name
+  resource_group_name               = local.azurerm_resource_group_name
   role_based_access_control_enabled = var.role_based_access_control_enabled
   sku_tier                          = var.sku_tier
   tags                              = var.tags

@@ -4,11 +4,11 @@ output "cluster_name" {
 }
 
 output "resource_group_name" {
-  value = var.resource_group_name
+  value = local.azurerm_resource_group_name
 }
 
 output "resource_group_location" {
-  value = var.location
+  value = local.azurerm_resource_group_location
 }
 
 output "cluster_oidc_issuer_url" {
