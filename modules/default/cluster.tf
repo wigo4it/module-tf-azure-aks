@@ -1,32 +1,6 @@
-resource "azurerm_user_assigned_identity" "aks_identity" {
-  count = 1 # var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
-
-  name                = "id-${var.name}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-}
-
-resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
-  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
-
-  scope                = var.private_dns_zone_id
-  role_definition_name = "Private DNS Zone Contributor"
-  principal_id         = azurerm_user_assigned_identity.aks_identity[0].principal_id
-}
-
-resource "azurerm_role_assignment" "aks_identity_network_contributor" {
-  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
-
-  scope                = var.virtual_network.id
-  role_definition_name = "Network Contributor"
-  principal_id         = azurerm_user_assigned_identity.aks_identity[0].principal_id
-}
-
 resource "azurerm_kubernetes_cluster" "default" {
   azure_policy_enabled              = var.azure_policy_enabled
   automatic_upgrade_channel         = var.automatic_upgrade_channel
-  depends_on                        = [azurerm_role_assignment.aks_identity_network_contributor]
   disk_encryption_set_id            = var.disk_encryption_set_id
   dns_prefix                        = coalesce(var.dns_prefix, var.name)
   image_cleaner_enabled             = var.image_cleaner_enabled
@@ -101,8 +75,8 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   identity {
-    identity_ids = var.private_cluster_enabled ? [azurerm_user_assigned_identity.aks_identity[0].id] : []
-    type         = var.private_cluster_enabled ? "UserAssigned" : "SystemAssigned"
+    identity_ids = []
+    type         = "SystemAssigned"
   }
 
   workload_autoscaler_profile {
