@@ -3,7 +3,7 @@ resource "azurerm_user_assigned_identity" "aks_identity" {
 
   name                = "id-${var.name}"
   location            = var.location
-  resource_group_name = azurerm_resource_group.default.name
+  resource_group_name = var.resource_group_name
   tags                = var.tags
 }
 
@@ -35,11 +35,11 @@ resource "azurerm_kubernetes_cluster" "default" {
   local_account_disabled            = var.local_account_disabled
   location                          = var.location
   name                              = var.name
-  node_resource_group               = "${azurerm_resource_group.default.name}-nodes"
+  node_resource_group               = "${var.resource_group_name}-nodes"
   oidc_issuer_enabled               = var.oidc_issuer_enabled
   private_cluster_enabled           = var.private_cluster_enabled
   private_dns_zone_id               = var.private_dns_zone_id
-  resource_group_name               = azurerm_resource_group.default.name
+  resource_group_name               = var.resource_group_name
   role_based_access_control_enabled = var.role_based_access_control_enabled
   sku_tier                          = var.sku_tier
   tags                              = var.tags

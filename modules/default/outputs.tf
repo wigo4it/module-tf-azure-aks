@@ -4,7 +4,7 @@ output "cluster_name" {
 }
 
 output "resource_group_name" {
-  value = azurerm_resource_group.default.name
+  value = data.azurerm_resource_group.default.id == null ? azurerm_resource_group.default.name : data.azurerm_resource_group.default.name
 }
 
 output "resource_group_location" {

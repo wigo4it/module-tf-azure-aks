@@ -11,9 +11,9 @@ resource "azurerm_virtual_network" "default" {
   count = var.virtual_network.is_existing ? 0 : 1
 
   name                = var.virtual_network.name
-  resource_group_name = azurerm_resource_group.default.name
+  resource_group_name = var.resource_group_name
+  location            = var.location
   address_space       = var.virtual_network.address_space
-  location            = azurerm_resource_group.default.location
   tags                = var.tags
 }
 
