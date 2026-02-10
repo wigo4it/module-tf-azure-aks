@@ -22,7 +22,7 @@ resource "azurerm_subnet" "default" {
   count = var.virtual_network.subnet.is_existing ? 0 : 1
 
   name                 = var.virtual_network.subnet.name
-  resource_group_name  = var.virtual_network.is_existing ? var.virtual_network.resource_group_name : var.resource_group_name
+  resource_group_name  = var.virtual_network.resource_group_name
   virtual_network_name = var.virtual_network.name
   address_prefixes     = var.virtual_network.subnet.address_prefixes
   service_endpoints    = var.virtual_network.subnet.service_endpoints
