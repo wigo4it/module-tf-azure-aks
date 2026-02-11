@@ -262,12 +262,6 @@ variable "private_dns_zone_id" {
   default     = null
 }
 
-variable "assign_private_dns_zone_rbac" {
-  description = "(Optional) Assign 'Private DNS Zone Contributor' to the UAI"
-  type        = bool
-  default     = false
-}
-
 variable "role_based_access_control_enabled" {
   description = "(Optional) Enable role-based access control (RBAC) for the AKS cluster. This is recommended for security compliance."
   type        = bool
@@ -325,4 +319,13 @@ variable "workload_identity_enabled" {
   description = "(Optional) Enable workload identity for the AKS cluster."
   type        = bool
   default     = true
+}
+
+variable "user_assigned_identity" {
+  description = "(Optional) The name and Resource group of the UAI the cluster can use instead of SystemAssigned."
+  type = object({
+    name                = string
+    resource_group_name = string
+  })
+  default = null
 }
