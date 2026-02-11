@@ -328,4 +328,8 @@ variable "user_assigned_identity" {
     resource_group_name = string
   })
   default = null
+  validation {
+    condition     = var.private_cluster_enabled == true && var.user_assigned_identity.name != null
+    error_message = "When using a private cluster, a User Assigned Identity should be supplied."
+  }
 }
