@@ -320,3 +320,12 @@ variable "workload_identity_enabled" {
   type        = bool
   default     = true
 }
+
+variable "user_assigned_identity" {
+  description = "(Optional) The name and Resource group of the UAI the cluster can use instead of SystemAssigned."
+  type = object({
+    name                = string
+    resource_group_name = string
+  })
+  default = null
+}

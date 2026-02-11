@@ -1,3 +1,10 @@
+data "azurerm_user_assigned_identity" "aks" {
+  count = var.user_assigned_identity.name != null ? 1 : 0
+
+  name                = var.user_assigned_identity.name
+  resource_group_name = var.user_assigned_identity.name
+}
+
 resource "azurerm_kubernetes_cluster" "default" {
   azure_policy_enabled              = var.azure_policy_enabled
   automatic_upgrade_channel         = var.automatic_upgrade_channel
@@ -73,10 +80,9 @@ resource "azurerm_kubernetes_cluster" "default" {
       )
     }
   }
-
   identity {
-    identity_ids = []
-    type         = "SystemAssigned"
+    identity_ids = var.user_assigned_identity.name != null ? [data.azurerm_user_assigned_identity.aks[0].id] : []
+    type         = var.user_assigned_identity.name != null ? "UserAssigned" : "SystemAssigned"
   }
 
   workload_autoscaler_profile {
