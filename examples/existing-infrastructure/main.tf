@@ -23,12 +23,10 @@ module "haven" {
   }
 
   # Network profile configuration
-  network_profile = {
-    network_plugin    = "azure"
-    network_policy    = "calico"
-    load_balancer_sku = "standard"
-    ip_versions       = ["IPv4"]
-  }
+  network_profile = var.network_profile
+
+  # Pod Security Standards configuration
+  pod_security_policy = var.pod_security_policy
 
   kubernetes_version = var.kubernetes_version
 

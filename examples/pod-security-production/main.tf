@@ -1,15 +1,16 @@
-# Resource group for monitoring resources
+# Resource group for monitoring
 resource "azurerm_resource_group" "monitoring" {
   name     = "rg-monitoring-${var.cluster_name}"
   location = var.location
 
   tags = {
-    Environment = "minimal-example"
-    Purpose     = "monitoring"
+    Environment = "production"
+    Purpose     = "aks-monitoring"
+    Example     = "pod-security-standards"
   }
 }
 
-# Log Analytics Workspace for AKS monitoring
+# Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "aks_monitoring" {
   name                = "law-aks-${var.cluster_name}"
   location            = var.location
@@ -18,15 +19,14 @@ resource "azurerm_log_analytics_workspace" "aks_monitoring" {
   retention_in_days   = 30
 
   tags = {
-    Environment = "minimal-example"
+    Environment = "production"
     Purpose     = "aks-monitoring"
+    Example     = "pod-security-standards"
   }
 }
 
-# Optimized minimal AKS cluster deployment using shared configuration
-# This demonstrates DRY principles by reusing common Haven-compliant settings
-
-module "haven" {
+# AKS Cluster with Pod Security Standards
+module "aks_pod_security" {
   source = "../../modules/default"
 
   # Basic cluster identification
@@ -34,27 +34,28 @@ module "haven" {
   location            = var.location
   resource_group_name = "rg-${var.cluster_name}"
 
+  # Virtual network configuration
   virtual_network = {
-    is_existing         = false # false is the default value but used in this example to set explicitly
+    is_existing         = false
     name                = "vnet-${var.cluster_name}"
     resource_group_name = "rg-${var.cluster_name}"
     address_space       = var.vnet_address_space
-    peerings            = var.vnet_peerings
     subnet = {
       name             = "subnet-${var.cluster_name}"
       address_prefixes = var.subnet_address_prefixes
     }
   }
 
+  # Kubernetes version
   kubernetes_version = var.kubernetes_version
 
-  # Network profile configuration
+  # Network profile - Azure CNI Overlay
   network_profile = var.network_profile
 
-  # Pod Security Standards configuration
+  # 🔒 Pod Security Standards - Production configuration
   pod_security_policy = var.pod_security_policy
 
-  # Node pool configuration with good defaults
+  # Node pool configuration
   aks_default_node_pool = {
     vm_size                        = var.default_node_pool_vm_size
     node_count                     = var.default_node_pool_node_count
@@ -65,15 +66,14 @@ module "haven" {
     node_public_ip_enabled         = false
   }
 
-  # Optional configurations - only specify if different from defaults
-  aks_additional_node_pools = var.additional_node_pools
-  loadbalancer_ips          = var.loadbalancer_ips
-  private_cluster_enabled   = var.private_cluster_enabled
-  sku_tier                  = var.sku_tier
+  # Security settings
+  private_cluster_enabled = var.private_cluster_enabled
+  sku_tier                = var.sku_tier
 
-  # Only specify workload autoscaler if different from default (disabled)
-  workload_autoscaler_profile = var.enable_keda || var.enable_vpa ? {
-    keda_enabled                    = var.enable_keda
-    vertical_pod_autoscaler_enabled = var.enable_vpa
-  } : null
+  # Monitoring
+  existing_log_analytics_workspace_id = azurerm_log_analytics_workspace.aks_monitoring.id
+
+  depends_on = [
+    azurerm_log_analytics_workspace.aks_monitoring
+  ]
 }

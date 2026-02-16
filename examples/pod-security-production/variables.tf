@@ -1,18 +1,15 @@
-# Optimized variables with Haven-compliant defaults moved to terraform.tfvars
-
 # Required variables
 variable "cluster_name" {
   description = "Name of the AKS cluster"
   type        = string
 }
 
-# Location with European default
 variable "location" {
   description = "Azure region for the cluster"
   type        = string
 }
 
-# Network configuration with reasonable defaults
+# Network configuration
 variable "vnet_address_space" {
   description = "CIDR ranges for the virtual network"
   type        = list(string)
@@ -23,24 +20,23 @@ variable "subnet_address_prefixes" {
   type        = list(string)
 }
 
-# Kubernetes version with current stable default
+# Kubernetes configuration
 variable "kubernetes_version" {
   description = "Kubernetes version to use for the cluster"
   type        = string
 }
 
-# Node pool configuration with cost-effective defaults
+# Node pool configuration
 variable "default_node_pool_vm_size" {
   description = "VM size for the default node pool"
   type        = string
 }
 
 variable "default_node_pool_node_count" {
-  description = "Number of nodes in the default node pool (ignored if auto-scaling is enabled)"
+  description = "Number of nodes in the default node pool"
   type        = number
 }
 
-# Auto-scaling enabled by default for better resource management
 variable "enable_auto_scaling" {
   description = "Enable auto-scaling for the default node pool"
   type        = bool
@@ -56,37 +52,12 @@ variable "max_node_count" {
   type        = number
 }
 
-# Optional configurations with sensible defaults
-variable "additional_node_pools" {
-  description = "Additional node pools to create"
-  type = map(object({
-    vm_size                        = string
-    node_count                     = optional(number, 1)
-    zones                          = optional(list(string), ["1", "2", "3"])
-    mode                           = optional(string, "User")
-    max_pods                       = optional(number, 120)
-    labels                         = optional(map(string), {})
-    taints                         = optional(list(string), [])
-    spot_node                      = optional(bool, false)
-    cluster_auto_scaling_enabled   = optional(bool, false)
-    cluster_auto_scaling_min_count = optional(number, null)
-    cluster_auto_scaling_max_count = optional(number, null)
-    node_public_ip_enabled         = optional(bool, false)
-  }))
-}
-
-variable "loadbalancer_ips" {
-  description = "Specific load balancer IP addresses to use (if any)"
-  type        = list(string)
-}
-
-# Security defaults - private cluster disabled for easier testing
+# Security configuration
 variable "private_cluster_enabled" {
   description = "Enable private cluster (API server not accessible from public internet)"
   type        = bool
 }
 
-# Haven recommends Standard SKU for production
 variable "sku_tier" {
   description = "SKU tier for the AKS cluster (Free, Standard, Premium)"
   type        = string
@@ -96,22 +67,7 @@ variable "sku_tier" {
   }
 }
 
-# Workload autoscaler - disabled by default
-variable "enable_keda" {
-  description = "Enable KEDA (Kubernetes-based Event Driven Autoscaling)"
-  type        = bool
-}
-
-variable "enable_vpa" {
-  description = "Enable VPA (Vertical Pod Autoscaler)"
-  type        = bool
-}
-
-variable "vnet_peerings" {
-  description = "List of VNet resource IDs to peer with"
-  type        = list(string)
-}
-
+# Network profile
 variable "network_profile" {
   description = "Network configuration for the AKS cluster"
   type = object({
@@ -126,12 +82,13 @@ variable "network_profile" {
   })
 }
 
+# Pod Security Standards
 variable "pod_security_policy" {
   description = "Pod Security Standards configuration via Azure Policy"
   type = object({
     enabled             = optional(bool, true)
     level               = optional(string, "baseline")
-    effect              = optional(string, "audit")
+    effect              = optional(string, "deny")
     excluded_namespaces = optional(list(string), [])
   })
 }

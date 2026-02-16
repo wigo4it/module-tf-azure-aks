@@ -108,3 +108,27 @@ variable "enable_vpa" {
   type        = bool
   default     = false
 }
+
+variable "network_profile" {
+  description = "Network configuration for the AKS cluster"
+  type = object({
+    network_plugin      = optional(string, "azure")
+    network_plugin_mode = optional(string, "overlay")
+    network_policy      = optional(string, "calico")
+    load_balancer_sku   = optional(string, "standard")
+    ip_versions         = optional(list(string), ["IPv4"])
+    pod_cidr            = optional(string, "10.244.0.0/16")
+    service_cidr        = optional(string, "10.0.0.0/16")
+    dns_service_ip      = optional(string, "10.0.0.10")
+  })
+}
+
+variable "pod_security_policy" {
+  description = "Pod Security Standards configuration via Azure Policy"
+  type = object({
+    enabled             = optional(bool, true)
+    level               = optional(string, "baseline")
+    effect              = optional(string, "audit")
+    excluded_namespaces = optional(list(string), [])
+  })
+}

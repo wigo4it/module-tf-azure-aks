@@ -29,7 +29,7 @@ variable "aks_default_node_pool" {
     node_count                     = optional(number, 3)
     zones                          = optional(list(string), ["1", "2", "3"])
     mode                           = optional(string, "System")
-    max_pods                       = optional(number, 120)
+    max_pods                       = optional(number, 250)
     labels                         = optional(map(string), {})
     spot_node                      = optional(bool, false)
     spot_max_price                 = optional(number, null)
@@ -221,6 +221,70 @@ variable "microsoft_defender_enabled" {
   default     = true
 }
 
+variable "pod_security_policy" {
+  description = <<-EOT
+    (Optional) Configure Pod Security Standards enforcement via Azure Policy for Kubernetes.
+    
+    WAF Security Pillar: Pod Security Standards are CRITICAL for production (CIS Kubernetes Benchmark 5.2).
+    
+    Policy Levels:
+    - 'disabled': No pod security policies enforced (NOT RECOMMENDED for production)
+    - 'baseline': Minimally restrictive - prevents known privilege escalations, recommended minimum
+    - 'restricted': Heavily restricted - follows pod hardening best practices (BEST for production)
+    
+    Baseline policies block:
+    - Privileged containers
+    - Host namespace sharing (PID, IPC, Network)
+    - HostPath volumes
+    - Host ports
+    - Privilege escalation
+    - Root containers (in restricted mode)
+    - Dangerous capabilities (NET_RAW, etc.)
+    
+    Effect modes:
+    - 'audit': Log violations but allow deployment (use for testing)
+    - 'deny': Block non-compliant deployments (recommended for production)
+    
+    Excluded namespaces: kube-system, gatekeeper-system, azure-arc are automatically excluded.
+    
+    Note: Requires Azure Policy Add-on to be enabled on the AKS cluster (enabled by default).
+    
+    For more information:
+    - https://learn.microsoft.com/azure/aks/use-azure-policy
+    - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+  EOT
+  type = object({
+    enabled             = optional(bool, true)
+    level               = optional(string, "baseline")
+    effect              = optional(string, "audit")
+    excluded_namespaces = optional(list(string), [])
+  })
+  default = {
+    enabled             = true
+    level               = "baseline"
+    effect              = "audit"
+    excluded_namespaces = []
+  }
+
+  validation {
+    condition     = contains(["disabled", "baseline", "restricted"], var.pod_security_policy.level)
+    error_message = "Pod security policy level must be one of: disabled, baseline, restricted."
+  }
+
+  validation {
+    condition     = contains(["audit", "deny"], var.pod_security_policy.effect)
+    error_message = "Pod security policy effect must be one of: audit, deny."
+  }
+
+  validation {
+    condition = (
+      var.pod_security_policy.level == "disabled" ||
+      (var.pod_security_policy.level != "disabled" && var.pod_security_policy.enabled == true)
+    )
+    error_message = "When pod_security_policy level is not 'disabled', enabled must be true."
+  }
+}
+
 variable "existing_log_analytics_workspace_id" {
   description = "(Optional) ID of existing Log Analytics workspace to use for AKS monitoring. If not provided, a new workspace will be created."
   type        = string
@@ -263,18 +327,58 @@ variable "local_account_disabled" {
 }
 
 variable "network_profile" {
-  description = "(Optional) Network configuration for the AKS cluster. Uses Haven-compliant defaults if not specified."
+  description = <<-EOT
+    (Optional) Network configuration for the AKS cluster.
+    
+    Azure CNI Overlay (Recommended - Default):
+    - Best practice for most scenarios (Microsoft recommended)
+    - Conserves VNet IP addresses (pods use separate CIDR)
+    - Supports up to 250 pods per node
+    - Better scalability and simpler IP management
+    - Set network_plugin_mode = "overlay"
+    
+    Azure CNI (Legacy):
+    - Pods consume VNet IPs (risk of IP exhaustion)
+    - Supports up to 30 pods per node (legacy) or 110 with pod subnet
+    - Set network_plugin_mode = null or omit
+    
+    For more information: https://learn.microsoft.com/azure/aks/azure-cni-overlay
+  EOT
   type = object({
-    network_plugin    = optional(string, "azure")
-    network_policy    = optional(string, "calico")
-    load_balancer_sku = optional(string, "standard")
-    ip_versions       = optional(list(string), ["IPv4"])
+    network_plugin      = optional(string, "azure")
+    network_plugin_mode = optional(string, "overlay")
+    network_policy      = optional(string, "calico")
+    load_balancer_sku   = optional(string, "standard")
+    ip_versions         = optional(list(string), ["IPv4"])
+    pod_cidr            = optional(string, "10.244.0.0/16")
+    service_cidr        = optional(string, "10.0.0.0/16")
+    dns_service_ip      = optional(string, "10.0.0.10")
   })
   default = {
-    network_plugin    = "azure"
-    network_policy    = "calico"
-    load_balancer_sku = "standard"
-    ip_versions       = ["IPv4"]
+    network_plugin      = "azure"
+    network_plugin_mode = "overlay"
+    network_policy      = "calico"
+    load_balancer_sku   = "standard"
+    ip_versions         = ["IPv4"]
+    pod_cidr            = "10.244.0.0/16"
+    service_cidr        = "10.0.0.0/16"
+    dns_service_ip      = "10.0.0.10"
+  }
+
+  validation {
+    condition = (
+      var.network_profile.network_plugin_mode != "overlay" ||
+      (var.network_profile.network_plugin_mode == "overlay" && var.network_profile.pod_cidr != null)
+    )
+    error_message = "When network_plugin_mode is 'overlay', pod_cidr must be specified."
+  }
+
+  validation {
+    condition = (
+      var.network_profile.network_plugin == "azure" ||
+      var.network_profile.network_plugin_mode == null
+    )
+    error_message = "network_plugin_mode 'overlay' is only supported with network_plugin 'azure'."
   }
 }
 
