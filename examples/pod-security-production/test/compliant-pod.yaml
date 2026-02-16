@@ -1,0 +1,101 @@
+# Compliant Pod Example
+# This pod follows Pod Security Standards baseline requirements and should be ALLOWED
+apiVersion: v1
+kind: Pod
+metadata:
+  name: compliant-nginx
+  labels:
+    app: nginx
+    security: compliant
+    example: pod-security-standards
+spec:
+  # Pod-level security context
+  securityContext:
+    runAsNonRoot: true    # Required: Don't run as root
+    runAsUser: 1000       # Run as non-privileged user
+    fsGroup: 1000         # File system group
+    seccompProfile:
+      type: RuntimeDefault  # Use default seccomp profile
+
+  containers:
+  - name: nginx
+    image: nginxinc/nginx-unprivileged:latest  # Non-root nginx image
+    
+    # Container-level security context
+    securityContext:
+      allowPrivilegeEscalation: false  # Required: Prevent privilege escalation
+      capabilities:
+        drop:
+        - ALL  # Drop all capabilities
+      readOnlyRootFilesystem: false  # Set to true for maximum security (requires writable volumes)
+      runAsNonRoot: true
+      runAsUser: 1000
+    
+    ports:
+    - containerPort: 8080  # Non-privileged port
+      name: http
+      protocol: TCP
+    
+    # Resource limits (best practice)
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    
+    # Liveness probe
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 8080
+      initialDelaySeconds: 10
+      periodSeconds: 5
+    
+    # Readiness probe
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 3
+    
+    # Volume mounts (allowed types: emptyDir, configMap, secret, etc.)
+    volumeMounts:
+    - name: cache
+      mountPath: /var/cache/nginx
+    - name: run
+      mountPath: /var/run
+    - name: config
+      mountPath: /etc/nginx/conf.d
+      readOnly: true
+
+  volumes:
+  # Allowed volume types for baseline/restricted policies
+  - name: cache
+    emptyDir: {}
+  - name: run
+    emptyDir: {}
+  - name: config
+    configMap:
+      name: nginx-config
+      optional: true
+
+---
+# Optional: ConfigMap for nginx configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        server_name localhost;
+        
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+    }

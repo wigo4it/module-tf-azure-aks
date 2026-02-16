@@ -1,0 +1,53 @@
+# Non-Compliant Pod Example
+# This pod violates Pod Security Standards baseline requirements and should be BLOCKED
+apiVersion: v1
+kind: Pod
+metadata:
+  name: privileged-nginx
+  labels:
+    app: nginx
+    security: non-compliant
+    example: pod-security-standards
+spec:
+  # ❌ VIOLATION: hostNetwork allows pod to use host's network namespace
+  hostNetwork: true
+  
+  # ❌ VIOLATION: hostPID allows pod to see host processes
+  hostPID: true
+  
+  # ❌ VIOLATION: hostIPC allows pod to use host's IPC namespace
+  hostIPC: true
+
+  containers:
+  - name: nginx
+    image: nginx:latest  # Runs as root by default
+    
+    # ❌ VIOLATION: Privileged container
+    securityContext:
+      privileged: true  # This is the main violation - gives unrestricted access
+      allowPrivilegeEscalation: true  # ❌ Allows gaining more privileges
+      capabilities:
+        add:
+        - SYS_ADMIN  # ❌ Dangerous capability
+        - NET_RAW    # ❌ Allows raw socket access
+      runAsUser: 0  # ❌ Running as root
+    
+    ports:
+    # ❌ VIOLATION: hostPort binds to host's port
+    - containerPort: 80
+      hostPort: 80
+      name: http
+      protocol: TCP
+    
+    # ❌ VIOLATION: Mounting host path
+    volumeMounts:
+    - name: host-root
+      mountPath: /host
+      readOnly: false  # ❌ Write access to host filesystem
+
+  volumes:
+  # ❌ VIOLATION: hostPath volume (access to host filesystem)
+  - name: host-root
+    hostPath:
+      path: /
+      type: Directory
