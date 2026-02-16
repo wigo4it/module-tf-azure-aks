@@ -214,7 +214,7 @@ variable "loadbalancer_ips" {
 variable "local_account_disabled" {
   description = "(Optional) Disable local accounts for security compliance. This is recommended."
   type        = bool
-  default     = false
+  default     = true
 
   validation {
     condition = (
@@ -253,7 +253,7 @@ variable "oidc_issuer_enabled" {
 variable "private_cluster_enabled" {
   description = "(Optional) Enable private cluster mode for the AKS cluster."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "private_dns_zone_id" {
