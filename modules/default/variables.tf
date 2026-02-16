@@ -184,7 +184,7 @@ variable "dns_prefix" {
 variable "microsoft_defender_enabled" {
   description = "(Optional) Enable Microsoft Defender for Containers"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "existing_log_analytics_workspace_id" {
