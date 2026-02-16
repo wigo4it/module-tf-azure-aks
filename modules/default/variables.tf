@@ -180,7 +180,46 @@ variable "azure_policy_enabled" {
 }
 
 variable "disk_encryption_set_id" {
-  description = "(Optional) The ID of the Disk Encryption Set which should be used for the Nodes and Volumes. More information can be found in the documentation."
+  description = <<-EOT
+    (Optional) The ID of the Azure Disk Encryption Set for encrypting node OS disks and data disks with Customer-Managed Keys (CMK).
+    
+    WAF Security Pillar: Customer-Managed Keys provide enhanced control over encryption keys and meet compliance requirements.
+    
+    Benefits:
+    - Full control over key lifecycle (rotation, revocation, deletion)
+    - Integration with Azure Key Vault for centralized key management
+    - Compliance with regulations requiring customer-controlled encryption (HIPAA, PCI-DSS, etc.)
+    - Audit trail for key usage
+    
+    Prerequisites:
+    1. Create Azure Key Vault with purge protection enabled
+    2. Create a Key Vault key (RSA 2048 or higher)
+    3. Create Disk Encryption Set referencing the Key Vault key
+    4. Grant AKS cluster identity "Reader" access to Disk Encryption Set
+    5. Grant Disk Encryption Set managed identity "Key Vault Crypto Service Encryption User" role on Key Vault
+    
+    Example:
+    ```
+    # Create Disk Encryption Set
+    resource "azurerm_disk_encryption_set" "aks" {
+      name                = "aks-cmk-encryption"
+      resource_group_name = azurerm_resource_group.rg.name
+      location            = azurerm_resource_group.rg.location
+      key_vault_key_id    = azurerm_key_vault_key.aks.id
+      
+      identity {
+        type = "SystemAssigned"
+      }
+    }
+    
+    # Then pass the ID to this variable
+    disk_encryption_set_id = azurerm_disk_encryption_set.aks.id
+    ```
+    
+    Cost Impact: No additional Azure cost for CMK, but requires Key Vault ($0.03 per 10,000 operations)
+    
+    Documentation: https://learn.microsoft.com/azure/aks/azure-disk-customer-managed-keys
+  EOT
   type        = string
   default     = null
 }
@@ -457,4 +496,76 @@ variable "workload_identity_enabled" {
   description = "(Optional) Enable workload identity for the AKS cluster."
   type        = bool
   default     = true
+}
+
+variable "monitoring_alerts" {
+  description = <<-EOT
+    (Optional) Configure Azure Monitor metric alerts for proactive cluster monitoring.
+    
+    WAF Operational Excellence: Proactive alerting prevents incidents and ensures SLA compliance.
+    
+    Alert Types:
+    - node_cpu_threshold: Alert when node CPU usage exceeds percentage (default: 80%)
+    - node_memory_threshold: Alert when node memory usage exceeds percentage (default: 80%)
+    - pod_restart_threshold: Alert when pod restarts exceed count in 15 minutes (default: 5)
+    - disk_usage_threshold: Alert when disk usage exceeds percentage (default: 85%)
+    - api_server_latency: Alert when API server response time exceeds milliseconds (default: 1000ms)
+    
+    Action Groups: Define how alerts are delivered (email, SMS, webhook, Azure Function, Logic App)
+    
+    Example:
+    ```
+    monitoring_alerts = {
+      enabled = true
+      action_group_ids = [azurerm_monitor_action_group.ops_team.id]
+      
+      node_cpu_threshold    = 80
+      node_memory_threshold = 85
+      pod_restart_threshold = 10
+      disk_usage_threshold  = 90
+    }
+    ```
+    
+    Documentation: https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-metric
+  EOT
+  type = object({
+    enabled               = optional(bool, false)
+    action_group_ids      = optional(list(string), [])
+    node_cpu_threshold    = optional(number, 80)
+    node_memory_threshold = optional(number, 80)
+    pod_restart_threshold = optional(number, 5)
+    disk_usage_threshold  = optional(number, 85)
+    api_server_latency_ms = optional(number, 1000)
+  })
+  default = {
+    enabled               = false
+    action_group_ids      = []
+    node_cpu_threshold    = 80
+    node_memory_threshold = 80
+    pod_restart_threshold = 5
+    disk_usage_threshold  = 85
+    api_server_latency_ms = 1000
+  }
+
+  validation {
+    condition = (
+      var.monitoring_alerts.enabled == false ||
+      (var.monitoring_alerts.enabled == true && length(var.monitoring_alerts.action_group_ids) > 0)
+    )
+    error_message = "When monitoring_alerts.enabled is true, at least one action_group_id must be provided."
+  }
+
+  validation {
+    condition = (
+      var.monitoring_alerts.node_cpu_threshold >= 50 && var.monitoring_alerts.node_cpu_threshold <= 100
+    )
+    error_message = "node_cpu_threshold must be between 50 and 100."
+  }
+
+  validation {
+    condition = (
+      var.monitoring_alerts.node_memory_threshold >= 50 && var.monitoring_alerts.node_memory_threshold <= 100
+    )
+    error_message = "node_memory_threshold must be between 50 and 100."
+  }
 }

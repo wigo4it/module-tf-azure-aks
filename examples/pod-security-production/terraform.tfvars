@@ -3,7 +3,7 @@
 
 # Basic cluster configuration
 cluster_name = "pod-security-demo"
-location     = "West Europe"
+location     = "westeurope"
 
 # Network configuration
 vnet_address_space      = ["10.1.0.0/16"]

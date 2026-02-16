@@ -3,7 +3,7 @@
 
 # Basic cluster configuration
 cluster_name = "haven-cluster"
-location     = "West Europe"
+location     = "westeurope"
 
 # Network configuration with reasonable defaults
 vnet_address_space      = ["10.0.0.0/16"]
