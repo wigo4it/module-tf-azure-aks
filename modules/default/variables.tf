@@ -2,11 +2,31 @@
 # Required Variables
 # =============================
 variable "aks_default_node_pool" {
-  description = "(Required) Configuration for the default node pool in the AKS cluster."
+  description = <<-EOT
+    (Required) Configuration for the default node pool in the AKS cluster.
+    
+    VM Size Selection Guidelines:
+    - ⚠️  DO NOT use B-series VMs (explicitly not recommended by Microsoft for AKS)
+    - ✅ Use v6-series VMs for production (latest generation, best performance & security)
+    - ✅ Use v5-series VMs as alternative (good performance, wide availability)
+    - Minimum requirements: 2 vCPUs and 4 GB RAM for system node pools
+    
+    🔒 RECOMMENDED - Confidential Computing (v6 - Latest, 4th Gen AMD EPYC Genoa):
+    - Standard_DC2ads_v6 (2 vCPUs, 8 GB RAM) - BEST CHOICE: Latest gen + built-in SEV-SNP encryption
+    - Standard_DC4ads_v6 (4 vCPUs, 16 GB RAM) - Higher capacity with confidential computing
+    - Standard_DC8ads_v6 (8 vCPUs, 32 GB RAM) - Production workloads with enhanced security
+    
+    General Purpose (v5 - Previous gen, widely available):
+    - Standard_D2s_v5 (2 vCPUs, 8 GB RAM) - Cost-effective, no confidential computing
+    - Standard_D4s_v5 (4 vCPUs, 16 GB RAM) - Better performance
+    - Standard_E2s_v5 (2 vCPUs, 16 GB RAM) - Memory-optimized workloads
+    
+    For more information: https://learn.microsoft.com/azure/virtual-machines/dcadsv6-series
+  EOT
   type = object({
     name                           = optional(string, "default")
     vm_size                        = string
-    node_count                     = optional(number, 1)
+    node_count                     = optional(number, 3)
     zones                          = optional(list(string), ["1", "2", "3"])
     mode                           = optional(string, "System")
     max_pods                       = optional(number, 120)
@@ -81,7 +101,21 @@ variable "virtual_network" {
 # Optional Variables
 # =============================
 variable "aks_additional_node_pools" {
-  description = "(Optional) Map of additional node pools to create for the AKS cluster."
+  description = <<-EOT
+    (Optional) Map of additional node pools to create for the AKS cluster.
+    
+    VM Size Selection Guidelines:
+    - ⚠️  DO NOT use B-series VMs (explicitly not recommended by Microsoft for AKS)
+    - ✅ Use v6-series VMs for production (latest generation, best performance & security)
+    - ✅ Use v5-series VMs as alternative (good performance, wide availability)
+    
+    Common scenarios:
+    - Confidential workloads: Standard_DC2ads_v6, Standard_DC4ads_v6, Standard_DC8ads_v6
+    - User workloads: Standard_D2s_v5 or Standard_D4s_v5
+    - Memory-intensive: Standard_E4s_v5 or Standard_E8s_v5
+    - GPU workloads: NC-series or ND-series
+    - Spot instances: Any v5/v6-series with spot_node = true (70-90% cost savings)
+  EOT
   type = map(object({
     vm_size                        = string
     node_count                     = optional(number, 1)
@@ -112,9 +146,9 @@ variable "aks_additional_node_pools" {
 }
 
 variable "aks_authorized_ip_ranges" {
-  description = "(Optional) List of authorized IP ranges for API server access. For security compliance, specify your organization's IP ranges."
+  description = "(Optional) List of authorized IP ranges for API server access. Only applies to public clusters (not supported on private clusters). For security compliance, explicitly specify only your organization's specific IP ranges. Empty by default to enforce explicit configuration."
   type        = list(string)
-  default     = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  default     = []
   validation {
     condition = length(var.aks_authorized_ip_ranges) == 0 || alltrue([
       for cidr in var.aks_authorized_ip_ranges : can(cidrhost(cidr, 0))
@@ -140,7 +174,7 @@ variable "aks_azure_active_directory_role_based_access_control" {
 }
 
 variable "azure_policy_enabled" {
-  description = "(Optional) Should the Azure Policy Add-On be enabled? For more details please visit Understand Azure Policy for Azure Kubernetes Service. Defaults to true."
+  description = "(Optional) Enable Azure Policy Add-On to enforce organizational standards and security baselines (Pod Security Standards, CIS Benchmark). Recommended for production to ensure policy compliance at scale. Default: enabled."
   type        = bool
   default     = true
 }
@@ -152,7 +186,7 @@ variable "disk_encryption_set_id" {
 }
 
 variable "enable_audit_logs" {
-  description = "(Optional) Enable audit logs for security compliance. This is recommended for production clusters."
+  description = "(Optional) Enable comprehensive audit logging for cluster activity monitoring, security compliance, and forensic analysis. Captures API server, authentication, and control plane events. Default: enabled for production compliance."
   type        = bool
   default     = true
 }
@@ -182,7 +216,7 @@ variable "dns_prefix" {
 }
 
 variable "microsoft_defender_enabled" {
-  description = "(Optional) Enable Microsoft Defender for Containers"
+  description = "(Optional) Enable Microsoft Defender for Containers for advanced threat protection, vulnerability scanning, and runtime security. Highly recommended for production workloads. Default: enabled for Standard/Premium SKU."
   type        = bool
   default     = true
 }
@@ -212,7 +246,7 @@ variable "loadbalancer_ips" {
 }
 
 variable "local_account_disabled" {
-  description = "(Optional) Disable local accounts for security compliance. This is recommended."
+  description = "(Optional) Disable local accounts to enforce Azure AD authentication and ensure all cluster access is centrally managed and audited. Required for production security compliance. When enabled, Azure AD RBAC must be configured."
   type        = bool
   default     = true
 
@@ -251,13 +285,13 @@ variable "oidc_issuer_enabled" {
 }
 
 variable "private_cluster_enabled" {
-  description = "(Optional) Enable private cluster mode for the AKS cluster."
+  description = "(Optional) Enable private cluster mode to ensure API server is only accessible via private network. Strongly recommended for production environments to minimize attack surface. When enabled, the API server gets a private IP address."
   type        = bool
   default     = true
 }
 
 variable "private_dns_zone_id" {
-  description = "(Optional) ID of the private DNS zone to use for the AKS cluster. Required if private_cluster_enabled is true."
+  description = "(Optional) ID of the private DNS zone to use for the AKS cluster private API server. If not provided for private clusters, Azure creates a system-managed private DNS zone. Provide a custom DNS zone for advanced networking scenarios or when integrating with existing DNS infrastructure."
   type        = string
   default     = null
 }
