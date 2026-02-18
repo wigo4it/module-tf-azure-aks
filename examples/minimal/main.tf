@@ -48,6 +48,12 @@ module "haven" {
 
   kubernetes_version = var.kubernetes_version
 
+  # Network profile configuration
+  network_profile = var.network_profile
+
+  # Pod Security Standards configuration
+  pod_security_policy = var.pod_security_policy
+
   # Node pool configuration with good defaults
   aks_default_node_pool = {
     vm_size                        = var.default_node_pool_vm_size

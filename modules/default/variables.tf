@@ -2,14 +2,34 @@
 # Required Variables
 # =============================
 variable "aks_default_node_pool" {
-  description = "(Required) Configuration for the default node pool in the AKS cluster."
+  description = <<-EOT
+    (Required) Configuration for the default node pool in the AKS cluster.
+    
+    VM Size Selection Guidelines:
+    - ⚠️  DO NOT use B-series VMs (explicitly not recommended by Microsoft for AKS)
+    - ✅ Use v6-series VMs for production (latest generation, best performance & security)
+    - ✅ Use v5-series VMs as alternative (good performance, wide availability)
+    - Minimum requirements: 2 vCPUs and 4 GB RAM for system node pools
+    
+    🔒 RECOMMENDED - Confidential Computing (v6 - Latest, 4th Gen AMD EPYC Genoa):
+    - Standard_DC2ads_v6 (2 vCPUs, 8 GB RAM) - BEST CHOICE: Latest gen + built-in SEV-SNP encryption
+    - Standard_DC4ads_v6 (4 vCPUs, 16 GB RAM) - Higher capacity with confidential computing
+    - Standard_DC8ads_v6 (8 vCPUs, 32 GB RAM) - Production workloads with enhanced security
+    
+    General Purpose (v5 - Previous gen, widely available):
+    - Standard_D2s_v5 (2 vCPUs, 8 GB RAM) - Cost-effective, no confidential computing
+    - Standard_D4s_v5 (4 vCPUs, 16 GB RAM) - Better performance
+    - Standard_E2s_v5 (2 vCPUs, 16 GB RAM) - Memory-optimized workloads
+    
+    For more information: https://learn.microsoft.com/azure/virtual-machines/dcadsv6-series
+  EOT
   type = object({
     name                           = optional(string, "default")
     vm_size                        = string
-    node_count                     = optional(number, 1)
+    node_count                     = optional(number, 3)
     zones                          = optional(list(string), ["1", "2", "3"])
     mode                           = optional(string, "System")
-    max_pods                       = optional(number, 120)
+    max_pods                       = optional(number, 250)
     labels                         = optional(map(string), {})
     spot_node                      = optional(bool, false)
     spot_max_price                 = optional(number, null)
@@ -26,8 +46,8 @@ variable "aks_default_node_pool" {
       drain_timeout_in_minutes = number
       max_surge                = string
       }), {
-      drain_timeout_in_minutes = 5
-      max_surge                = "10%"
+      drain_timeout_in_minutes = 30    # WAF: Honor PodDisruptionBudgets during upgrades
+      max_surge                = "33%" # WAF: Balance upgrade speed with cost
     })
   })
 }
@@ -48,8 +68,9 @@ variable "name" {
 }
 
 variable "resource_group_name" {
-  description = "(Required) Name of the resource group where resources will be created."
+  description = "(Optional) Name of existing resource group to use. If not provided, a new resource group will be created with name 'rg-{cluster_name}'."
   type        = string
+  default     = null
 }
 
 variable "virtual_network" {
@@ -81,7 +102,21 @@ variable "virtual_network" {
 # Optional Variables
 # =============================
 variable "aks_additional_node_pools" {
-  description = "(Optional) Map of additional node pools to create for the AKS cluster."
+  description = <<-EOT
+    (Optional) Map of additional node pools to create for the AKS cluster.
+    
+    VM Size Selection Guidelines:
+    - ⚠️  DO NOT use B-series VMs (explicitly not recommended by Microsoft for AKS)
+    - ✅ Use v6-series VMs for production (latest generation, best performance & security)
+    - ✅ Use v5-series VMs as alternative (good performance, wide availability)
+    
+    Common scenarios:
+    - Confidential workloads: Standard_DC2ads_v6, Standard_DC4ads_v6, Standard_DC8ads_v6
+    - User workloads: Standard_D2s_v5 or Standard_D4s_v5
+    - Memory-intensive: Standard_E4s_v5 or Standard_E8s_v5
+    - GPU workloads: NC-series or ND-series
+    - Spot instances: Any v5/v6-series with spot_node = true (70-90% cost savings)
+  EOT
   type = map(object({
     vm_size                        = string
     node_count                     = optional(number, 1)
@@ -104,17 +139,17 @@ variable "aks_additional_node_pools" {
       drain_timeout_in_minutes = number
       max_surge                = string
       }), {
-      drain_timeout_in_minutes = 5
-      max_surge                = "10%"
+      drain_timeout_in_minutes = 30    # WAF: Honor PodDisruptionBudgets during upgrades
+      max_surge                = "33%" # WAF: Balance upgrade speed with cost
     })
   }))
   default = {}
 }
 
 variable "aks_authorized_ip_ranges" {
-  description = "(Optional) List of authorized IP ranges for API server access. For security compliance, specify your organization's IP ranges."
+  description = "(Optional) List of authorized IP ranges for API server access. Only applies to public clusters (not supported on private clusters). For security compliance, explicitly specify only your organization's specific IP ranges. Empty by default to enforce explicit configuration."
   type        = list(string)
-  default     = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  default     = []
   validation {
     condition = length(var.aks_authorized_ip_ranges) == 0 || alltrue([
       for cidr in var.aks_authorized_ip_ranges : can(cidrhost(cidr, 0))
@@ -140,19 +175,82 @@ variable "aks_azure_active_directory_role_based_access_control" {
 }
 
 variable "azure_policy_enabled" {
-  description = "(Optional) Should the Azure Policy Add-On be enabled? For more details please visit Understand Azure Policy for Azure Kubernetes Service. Defaults to true."
+  description = "(Optional) Enable Azure Policy Add-On to enforce organizational standards and security baselines (Pod Security Standards, CIS Benchmark). Recommended for production to ensure policy compliance at scale. Default: enabled."
   type        = bool
   default     = true
 }
 
+variable "container_registry_id" {
+  description = <<-EOT
+    (Optional) The resource ID of the Azure Container Registry to attach to the AKS cluster.
+    
+    When provided, the AKS cluster's kubelet managed identity will be granted AcrPull role permissions,
+    enabling nodes to pull container images from the specified ACR without additional authentication.
+    
+    Benefits:
+    - Seamless image pulls from private ACR
+    - No need for image pull secrets
+    - Automatic authentication using managed identity
+    - Simplified container deployment workflow
+    
+    Example:
+    ```
+    container_registry_id = azurerm_container_registry.acr.id
+    ```
+    
+    For more information: https://learn.microsoft.com/azure/aks/cluster-container-registry-integration
+  EOT
+  type        = string
+  default     = null
+}
+
 variable "disk_encryption_set_id" {
-  description = "(Optional) The ID of the Disk Encryption Set which should be used for the Nodes and Volumes. More information can be found in the documentation."
+  description = <<-EOT
+    (Optional) The ID of the Azure Disk Encryption Set for encrypting node OS disks and data disks with Customer-Managed Keys (CMK).
+    
+    WAF Security Pillar: Customer-Managed Keys provide enhanced control over encryption keys and meet compliance requirements.
+    
+    Benefits:
+    - Full control over key lifecycle (rotation, revocation, deletion)
+    - Integration with Azure Key Vault for centralized key management
+    - Compliance with regulations requiring customer-controlled encryption (HIPAA, PCI-DSS, etc.)
+    - Audit trail for key usage
+    
+    Prerequisites:
+    1. Create Azure Key Vault with purge protection enabled
+    2. Create a Key Vault key (RSA 2048 or higher)
+    3. Create Disk Encryption Set referencing the Key Vault key
+    4. Grant AKS cluster identity "Reader" access to Disk Encryption Set
+    5. Grant Disk Encryption Set managed identity "Key Vault Crypto Service Encryption User" role on Key Vault
+    
+    Example:
+    ```
+    # Create Disk Encryption Set
+    resource "azurerm_disk_encryption_set" "aks" {
+      name                = "aks-cmk-encryption"
+      resource_group_name = var.resource_group_name
+      location            = var.location
+      key_vault_key_id    = azurerm_key_vault_key.aks.id
+      
+      identity {
+        type = "SystemAssigned"
+      }
+    }
+    
+    # Then pass the ID to this variable
+    disk_encryption_set_id = azurerm_disk_encryption_set.aks.id
+    ```
+    
+    Cost Impact: No additional Azure cost for CMK, but requires Key Vault ($0.03 per 10,000 operations)
+    
+    Documentation: https://learn.microsoft.com/azure/aks/azure-disk-customer-managed-keys
+  EOT
   type        = string
   default     = null
 }
 
 variable "enable_audit_logs" {
-  description = "(Optional) Enable audit logs for security compliance. This is recommended for production clusters."
+  description = "(Optional) Enable comprehensive audit logging for cluster activity monitoring, security compliance, and forensic analysis. Captures API server, authentication, and control plane events. Default: enabled for production compliance."
   type        = bool
   default     = true
 }
@@ -182,9 +280,73 @@ variable "dns_prefix" {
 }
 
 variable "microsoft_defender_enabled" {
-  description = "(Optional) Enable Microsoft Defender for Containers"
+  description = "(Optional) Enable Microsoft Defender for Containers for advanced threat protection, vulnerability scanning, and runtime security. Highly recommended for production workloads. Default: enabled for Standard/Premium SKU."
   type        = bool
-  default     = false
+  default     = true
+}
+
+variable "pod_security_policy" {
+  description = <<-EOT
+    (Optional) Configure Pod Security Standards enforcement via Azure Policy for Kubernetes.
+    
+    WAF Security Pillar: Pod Security Standards are CRITICAL for production (CIS Kubernetes Benchmark 5.2).
+    
+    Policy Levels:
+    - 'disabled': No pod security policies enforced (NOT RECOMMENDED for production)
+    - 'baseline': Minimally restrictive - prevents known privilege escalations, recommended minimum
+    - 'restricted': Heavily restricted - follows pod hardening best practices (BEST for production)
+    
+    Baseline policies block:
+    - Privileged containers
+    - Host namespace sharing (PID, IPC, Network)
+    - HostPath volumes
+    - Host ports
+    - Privilege escalation
+    - Root containers (in restricted mode)
+    - Dangerous capabilities (NET_RAW, etc.)
+    
+    Effect modes:
+    - 'audit': Log violations but allow deployment (use for testing)
+    - 'deny': Block non-compliant deployments (recommended for production)
+    
+    Excluded namespaces: kube-system, gatekeeper-system, azure-arc are automatically excluded.
+    
+    Note: Requires Azure Policy Add-on to be enabled on the AKS cluster (enabled by default).
+    
+    For more information:
+    - https://learn.microsoft.com/azure/aks/use-azure-policy
+    - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+  EOT
+  type = object({
+    enabled             = optional(bool, true)
+    level               = optional(string, "baseline")
+    effect              = optional(string, "audit")
+    excluded_namespaces = optional(list(string), [])
+  })
+  default = {
+    enabled             = true
+    level               = "baseline"
+    effect              = "audit"
+    excluded_namespaces = []
+  }
+
+  validation {
+    condition     = contains(["disabled", "baseline", "restricted"], var.pod_security_policy.level)
+    error_message = "Pod security policy level must be one of: disabled, baseline, restricted."
+  }
+
+  validation {
+    condition     = contains(["audit", "deny"], var.pod_security_policy.effect)
+    error_message = "Pod security policy effect must be one of: audit, deny."
+  }
+
+  validation {
+    condition = (
+      var.pod_security_policy.level == "disabled" ||
+      (var.pod_security_policy.level != "disabled" && var.pod_security_policy.enabled == true)
+    )
+    error_message = "When pod_security_policy level is not 'disabled', enabled must be true."
+  }
 }
 
 variable "existing_log_analytics_workspace_id" {
@@ -212,9 +374,9 @@ variable "loadbalancer_ips" {
 }
 
 variable "local_account_disabled" {
-  description = "(Optional) Disable local accounts for security compliance. This is recommended."
+  description = "(Optional) Disable local accounts to enforce Azure AD authentication and ensure all cluster access is centrally managed and audited. Required for production security compliance. When enabled, Azure AD RBAC must be configured."
   type        = bool
-  default     = false
+  default     = true
 
   validation {
     condition = (
@@ -229,18 +391,58 @@ variable "local_account_disabled" {
 }
 
 variable "network_profile" {
-  description = "(Optional) Network configuration for the AKS cluster. Uses Haven-compliant defaults if not specified."
+  description = <<-EOT
+    (Optional) Network configuration for the AKS cluster.
+    
+    Azure CNI Overlay (Recommended - Default):
+    - Best practice for most scenarios (Microsoft recommended)
+    - Conserves VNet IP addresses (pods use separate CIDR)
+    - Supports up to 250 pods per node
+    - Better scalability and simpler IP management
+    - Set network_plugin_mode = "overlay"
+    
+    Azure CNI (Legacy):
+    - Pods consume VNet IPs (risk of IP exhaustion)
+    - Supports up to 30 pods per node (legacy) or 110 with pod subnet
+    - Set network_plugin_mode = null or omit
+    
+    For more information: https://learn.microsoft.com/azure/aks/azure-cni-overlay
+  EOT
   type = object({
-    network_plugin    = optional(string, "azure")
-    network_policy    = optional(string, "calico")
-    load_balancer_sku = optional(string, "standard")
-    ip_versions       = optional(list(string), ["IPv4"])
+    network_plugin      = optional(string, "azure")
+    network_plugin_mode = optional(string, "overlay")
+    network_policy      = optional(string, "calico")
+    load_balancer_sku   = optional(string, "standard")
+    ip_versions         = optional(list(string), ["IPv4"])
+    pod_cidr            = optional(string, "10.244.0.0/16")
+    service_cidr        = optional(string, "10.0.0.0/16")
+    dns_service_ip      = optional(string, "10.0.0.10")
   })
   default = {
-    network_plugin    = "azure"
-    network_policy    = "calico"
-    load_balancer_sku = "standard"
-    ip_versions       = ["IPv4"]
+    network_plugin      = "azure"
+    network_plugin_mode = "overlay"
+    network_policy      = "calico"
+    load_balancer_sku   = "standard"
+    ip_versions         = ["IPv4"]
+    pod_cidr            = "10.244.0.0/16"
+    service_cidr        = "10.0.0.0/16"
+    dns_service_ip      = "10.0.0.10"
+  }
+
+  validation {
+    condition = (
+      var.network_profile.network_plugin_mode != "overlay" ||
+      (var.network_profile.network_plugin_mode == "overlay" && var.network_profile.pod_cidr != null)
+    )
+    error_message = "When network_plugin_mode is 'overlay', pod_cidr must be specified."
+  }
+
+  validation {
+    condition = (
+      var.network_profile.network_plugin == "azure" ||
+      var.network_profile.network_plugin_mode == null
+    )
+    error_message = "network_plugin_mode 'overlay' is only supported with network_plugin 'azure'."
   }
 }
 
@@ -251,13 +453,13 @@ variable "oidc_issuer_enabled" {
 }
 
 variable "private_cluster_enabled" {
-  description = "(Optional) Enable private cluster mode for the AKS cluster."
+  description = "(Optional) Enable private cluster mode to ensure API server is only accessible via private network. Strongly recommended for production environments to minimize attack surface. When enabled, the API server gets a private IP address."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "private_dns_zone_id" {
-  description = "(Optional) ID of the private DNS zone to use for the AKS cluster. Required if private_cluster_enabled is true."
+  description = "(Optional) ID of the private DNS zone to use for the AKS cluster private API server. If not provided for private clusters, Azure creates a system-managed private DNS zone. Provide a custom DNS zone for advanced networking scenarios or when integrating with existing DNS infrastructure."
   type        = string
   default     = null
 }
@@ -319,4 +521,76 @@ variable "workload_identity_enabled" {
   description = "(Optional) Enable workload identity for the AKS cluster."
   type        = bool
   default     = true
+}
+
+variable "monitoring_alerts" {
+  description = <<-EOT
+    (Optional) Configure Azure Monitor metric alerts for proactive cluster monitoring.
+    
+    WAF Operational Excellence: Proactive alerting prevents incidents and ensures SLA compliance.
+    
+    Alert Types:
+    - node_cpu_threshold: Alert when node CPU usage exceeds percentage (default: 80%)
+    - node_memory_threshold: Alert when node memory usage exceeds percentage (default: 80%)
+    - pod_restart_threshold: Alert when pod restarts exceed count in 15 minutes (default: 5)
+    - disk_usage_threshold: Alert when disk usage exceeds percentage (default: 85%)
+    - api_server_latency: Alert when API server response time exceeds milliseconds (default: 1000ms)
+    
+    Action Groups: Define how alerts are delivered (email, SMS, webhook, Azure Function, Logic App)
+    
+    Example:
+    ```
+    monitoring_alerts = {
+      enabled = true
+      action_group_ids = [azurerm_monitor_action_group.ops_team.id]
+      
+      node_cpu_threshold    = 80
+      node_memory_threshold = 85
+      pod_restart_threshold = 10
+      disk_usage_threshold  = 90
+    }
+    ```
+    
+    Documentation: https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-metric
+  EOT
+  type = object({
+    enabled               = optional(bool, false)
+    action_group_ids      = optional(list(string), [])
+    node_cpu_threshold    = optional(number, 80)
+    node_memory_threshold = optional(number, 80)
+    pod_restart_threshold = optional(number, 5)
+    disk_usage_threshold  = optional(number, 85)
+    api_server_latency_ms = optional(number, 1000)
+  })
+  default = {
+    enabled               = false
+    action_group_ids      = []
+    node_cpu_threshold    = 80
+    node_memory_threshold = 80
+    pod_restart_threshold = 5
+    disk_usage_threshold  = 85
+    api_server_latency_ms = 1000
+  }
+
+  validation {
+    condition = (
+      var.monitoring_alerts.enabled == false ||
+      (var.monitoring_alerts.enabled == true && length(var.monitoring_alerts.action_group_ids) > 0)
+    )
+    error_message = "When monitoring_alerts.enabled is true, at least one action_group_id must be provided."
+  }
+
+  validation {
+    condition = (
+      var.monitoring_alerts.node_cpu_threshold >= 50 && var.monitoring_alerts.node_cpu_threshold <= 100
+    )
+    error_message = "node_cpu_threshold must be between 50 and 100."
+  }
+
+  validation {
+    condition = (
+      var.monitoring_alerts.node_memory_threshold >= 50 && var.monitoring_alerts.node_memory_threshold <= 100
+    )
+    error_message = "node_memory_threshold must be between 50 and 100."
+  }
 }

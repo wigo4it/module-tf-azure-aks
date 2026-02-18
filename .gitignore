@@ -12,7 +12,7 @@ tfplan
 
 # Crash log files
 crash.log
-
+*.log
 *.env
 
 

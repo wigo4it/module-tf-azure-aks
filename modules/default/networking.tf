@@ -12,7 +12,7 @@ resource "azurerm_virtual_network" "default" {
 
   name                = var.virtual_network.name
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = local.resource_group.name
   address_space       = var.virtual_network.address_space
   tags                = var.tags
 }

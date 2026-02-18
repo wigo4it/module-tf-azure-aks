@@ -3,7 +3,7 @@ resource "azurerm_public_ip" "ingress_ipv4" {
 
   name                = "pip-ingress-ipv4-${var.name}-${count.index}"
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = local.resource_group.name
   ip_version          = "IPv4"
   allocation_method   = "Static"
   sku                 = "Standard"

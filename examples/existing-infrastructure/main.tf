@@ -1,16 +1,30 @@
 # Example: AKS cluster deployment using existing VNet and DNS zone
 # This example demonstrates how to deploy an Azure Kubernetes Service (AKS) cluster
 # using existing networking and DNS infrastructure with the Haven Terraform module.
+#
+# KISS Principle: This example only exposes essential configuration.
+# All other settings use module's WAF-compliant defaults.
 
-data "azurerm_client_config" "current" {}
+# DRY Principle: Define complex objects once in locals
+locals {
+  # Construct node pool configuration using sensible composition
+  default_node_pool = merge(
+    var.node_pool_config,
+    {
+      zones = ["1", "2", "3"] # Always use full 3-zone HA
+    }
+  )
+}
 
 module "haven" {
   source = "../../modules/default"
 
+  # Essential configuration (SRP: only what's specific to this example)
   name                = "aks-${var.cluster_name}"
   location            = var.location
-  resource_group_name = "rg-560x-${var.cluster_name}"
+  resource_group_name = azurerm_resource_group.aks.name
 
+  # Existing infrastructure integration
   virtual_network = {
     is_existing         = true
     id                  = azurerm_virtual_network.networking.id
@@ -22,54 +36,93 @@ module "haven" {
     }
   }
 
-  # Network profile configuration
-  network_profile = {
-    network_plugin    = "azure"
-    network_policy    = "calico"
-    load_balancer_sku = "standard"
-    ip_versions       = ["IPv4"]
-  }
-
   kubernetes_version = var.kubernetes_version
 
-  aks_default_node_pool = {
-    vm_size                        = var.default_node_pool_vm_size
-    node_count                     = var.default_node_pool_node_count
-    cluster_auto_scaling_enabled   = var.enable_auto_scaling
-    cluster_auto_scaling_min_count = var.enable_auto_scaling ? var.min_node_count : null
-    cluster_auto_scaling_max_count = var.enable_auto_scaling ? var.max_node_count : null
-    zones                          = ["1", "3"]
-  }
+  # Node pool uses composed local
+  aks_default_node_pool = local.default_node_pool
 
-  # Optional: Add additional node pools
-  aks_additional_node_pools = var.additional_node_pools
-
+  # WAF Security: Azure AD RBAC (local accounts disabled by module default)
   aks_azure_active_directory_role_based_access_control = {
     admin_group_object_ids = [data.azurerm_client_config.current.object_id]
     azure_rbac_enabled     = true
   }
 
-  local_account_disabled = true
-
-  # Optional: Configure load balancer IPs if you have specific requirements
-  loadbalancer_ips = var.loadbalancer_ips
-
-  # Optional: Configure private cluster
-  private_cluster_enabled = var.private_cluster_enabled
-
-  # Optional: Configure authorized ip ranges
-  aks_authorized_ip_ranges = []
-
-  # Optional: Configure SKU tier
-  sku_tier = var.sku_tier
-
-  # Optional: Configure workload autoscaler
-  workload_autoscaler_profile = {
-    keda_enabled                    = var.enable_keda
-    vertical_pod_autoscaler_enabled = var.enable_vpa
+  # WAF Security: Pod Security Standards - Production Grade (Restricted + Deny)
+  pod_security_policy = {
+    enabled = true
+    level   = "restricted" # Heavily restricted - follows pod hardening best practices
+    effect  = "deny"       # Block non-compliant deployments (production mode)
+    excluded_namespaces = [
+      "kube-system",
+      "gatekeeper-system",
+      "azure-arc"
+    ]
   }
 
-  existing_log_analytics_workspace_id = "/subscriptions/fab4321e-f2d4-43c7-9af7-43e0e1722e64/resourceGroups/rg-haven-monitoring-test/providers/Microsoft.OperationalInsights/workspaces/law-haven-test"
+  # WAF Security: Microsoft Defender for Containers (explicit enable for visibility)
+  microsoft_defender_enabled = true
+
+  # WAF Security: Private cluster with private DNS (production recommended)
+  private_cluster_enabled  = true
+  private_dns_zone_id      = var.private_dns_zone_id
+  aks_authorized_ip_ranges = [] # Empty for private cluster
+
+  # WAF Security: Workload Identity for secure pod-to-Azure authentication
+  workload_identity_enabled = true
+  oidc_issuer_enabled       = true
+
+  # WAF Security: Key Vault Secrets Provider with auto-rotation
+  key_vault_secrets_provider = {
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "2m"
+  }
+
+  # WAF Reliability: Standard SKU for 99.95% SLA
+  sku_tier = "Standard"
+
+  # WAF Reliability: Automatic security patches
+  automatic_upgrade_channel = "patch"
+
+  # WAF Security: Comprehensive audit logging
+  enable_audit_logs = true
+
+  existing_log_analytics_workspace_id = var.existing_log_analytics_workspace_id
+
+  # Optional: Attach Azure Container Registry
+  container_registry_id = var.container_registry_id
+
+  # WAF Security: Customer-Managed Keys for disk encryption
+  disk_encryption_set_id = var.disk_encryption_set_id
+
+  # WAF Operational Excellence: Monitoring alerts
+  monitoring_alerts = var.enable_monitoring_alerts && var.monitoring_action_group_id != null ? {
+    enabled               = true
+    action_group_ids      = [var.monitoring_action_group_id]
+    node_cpu_threshold    = 80
+    node_memory_threshold = 85
+    pod_restart_threshold = 5
+    disk_usage_threshold  = 90
+    api_server_latency_ms = 1000
+    } : {
+    enabled               = false
+    action_group_ids      = []
+    node_cpu_threshold    = 80
+    node_memory_threshold = 80
+    pod_restart_threshold = 5
+    disk_usage_threshold  = 85
+    api_server_latency_ms = 1000
+  }
+
+  # Enhanced tagging for better governance
+  tags = merge(
+    var.additional_tags,
+    {
+      deployment_method  = "terraform"
+      module_name        = "module-haven-cluster-azure-digilab"
+      kubernetes_version = var.kubernetes_version
+      cluster_name       = var.cluster_name
+    }
+  )
 
   # Explicit dependencies to ensure existing infrastructure is created first
   depends_on = [

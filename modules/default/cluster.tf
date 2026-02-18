@@ -1,9 +1,9 @@
 resource "azurerm_user_assigned_identity" "aks_identity" {
-  count = 1 # var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+  count = var.private_cluster_enabled ? 1 : 0
 
   name                = "id-${var.name}"
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = local.resource_group.name
   tags                = var.tags
 }
 
@@ -24,6 +24,11 @@ resource "azurerm_role_assignment" "aks_identity_network_contributor" {
 }
 
 resource "azurerm_kubernetes_cluster" "default" {
+  depends_on = [
+    azurerm_role_assignment.aks_identity_private_dns_zone_contributor,
+    azurerm_role_assignment.aks_identity_network_contributor
+  ]
+
   azure_policy_enabled              = var.azure_policy_enabled
   automatic_upgrade_channel         = var.automatic_upgrade_channel
   disk_encryption_set_id            = var.disk_encryption_set_id
@@ -34,11 +39,11 @@ resource "azurerm_kubernetes_cluster" "default" {
   local_account_disabled            = var.local_account_disabled
   location                          = var.location
   name                              = var.name
-  node_resource_group               = "${var.resource_group_name}-nodes"
+  node_resource_group               = "${local.resource_group.name}-nodes"
   oidc_issuer_enabled               = var.oidc_issuer_enabled
   private_cluster_enabled           = var.private_cluster_enabled
   private_dns_zone_id               = var.private_dns_zone_id
-  resource_group_name               = var.resource_group_name
+  resource_group_name               = local.resource_group.name
   role_based_access_control_enabled = var.role_based_access_control_enabled
   sku_tier                          = var.sku_tier
   tags                              = var.tags
@@ -87,10 +92,14 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   network_profile {
-    ip_versions       = var.network_profile.ip_versions
-    load_balancer_sku = var.network_profile.load_balancer_sku
-    network_plugin    = var.network_profile.network_plugin
-    network_policy    = var.network_profile.network_policy
+    ip_versions         = var.network_profile.ip_versions
+    load_balancer_sku   = var.network_profile.load_balancer_sku
+    network_plugin      = var.network_profile.network_plugin
+    network_plugin_mode = var.network_profile.network_plugin_mode
+    network_policy      = var.network_profile.network_policy
+    pod_cidr            = var.network_profile.network_plugin_mode == "overlay" ? var.network_profile.pod_cidr : null
+    service_cidr        = var.network_profile.service_cidr
+    dns_service_ip      = var.network_profile.dns_service_ip
 
     load_balancer_profile {
       outbound_ip_address_ids = concat(
