@@ -59,13 +59,15 @@ This Terraform module for Azure Kubernetes Service (AKS) has achieved **Elite st
 - ✅ Azure Monitor integration with configurable retention
 - ✅ Node pool autoscaling support
 - ✅ PodDisruptionBudget examples and best practices
-- ✅ **NEW:** Comprehensive backup and disaster recovery guide with Velero
+- ✅ **NEW:** Comprehensive backup and disaster recovery guide (Azure Backup + Velero)
+- ✅ **NEW:** Azure Backup for AKS integration (native Azure solution)
 - ✅ **NEW:** Multi-region architecture patterns (active-active, active-passive)
 - ✅ **NEW:** Disaster recovery runbooks with RTO/RPO targets
 - ✅ **NEW:** Cross-region data replication strategies
 
 **Implemented Improvements:**
-- ✅ Complete Velero backup/restore procedures
+- ✅ Azure Backup for AKS configuration guide (native solution)
+- ✅ Complete Velero backup/restore procedures (alternative)
 - ✅ Daily scheduled backups with 30-day retention
 - ✅ Application-specific backup strategies
 - ✅ Database backup hooks (PostgreSQL, etc.)

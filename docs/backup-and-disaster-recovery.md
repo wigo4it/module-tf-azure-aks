@@ -11,6 +11,98 @@ A complete AKS disaster recovery strategy requires:
 3. **Kubernetes Objects Backup** (Deployments, ConfigMaps, Secrets)
 4. **Disaster Recovery Plan** (Multi-region, RTO/RPO targets)
 
+### What Gets Backed Up?
+
+**✅ Included in AKS Backup:**
+
+1. **Kubernetes Resources (Workloads)**
+   - Deployments, StatefulSets, DaemonSets
+   - ReplicaSets, Pods (resource definitions, not running state)
+   - Jobs, CronJobs
+   - Custom Resource Definitions (CRDs) and custom resources
+
+2. **Configuration & Secrets**
+   - ConfigMaps
+   - Secrets (encrypted in backup)
+   - Service Accounts
+   - Resource Quotas, Limit Ranges
+
+3. **Networking Resources**
+   - Services (ClusterIP, NodePort, LoadBalancer definitions)
+   - Ingress resources
+   - Network Policies
+   - Endpoints
+
+4. **Storage**
+   - Persistent Volume Claims (PVCs) and their data
+   - Persistent Volumes (PVs) - via Azure Disk snapshots or file-level backup
+   - Storage Classes
+
+5. **Access Control**
+   - Roles and ClusterRoles
+   - RoleBindings and ClusterRoleBindings
+   - Pod Security Policies/Standards
+
+6. **Application-Specific Resources**
+   - Operators and their CRDs
+   - Helm chart resources
+   - Service Mesh configurations (Istio, Linkerd)
+
+**❌ NOT Backed Up (Managed Separately):**
+
+1. **AKS Control Plane**
+   - Kubernetes API server configuration (managed by Azure)
+   - etcd database (managed by Azure with built-in HA)
+   - Scheduler and controller manager (managed by Azure)
+
+2. **Infrastructure (IaC)**
+   - AKS cluster configuration (backed up via Terraform in Git)
+   - Node pools and VM sizes (defined in Terraform)
+   - Virtual networks, subnets (defined in Terraform)
+   - Azure resources outside cluster (Load Balancers, Public IPs, NSGs)
+
+3. **Observability Data**
+   - Metrics (stored in Azure Monitor/Prometheus)
+   - Logs (stored in Log Analytics)
+   - Traces (stored in Application Insights)
+
+4. **Runtime State**
+   - Running pod memory/CPU state
+   - Temporary volumes (EmptyDir, unless explicitly backed up)
+   - Container runtime cache
+
+5. **Azure-Managed Add-ons**
+   - Azure CNI configuration
+   - Kubelet configuration
+   - Container runtime settings
+
+**💡 Complete Backup Strategy = IaC + Kubernetes Backup + Observability Data**
+
+---
+
+### Backup Solution Selection
+
+Microsoft recommends **two approaches** for backing up AKS clusters:
+
+**🎯 Azure Backup for AKS (Recommended for Azure-native deployments)**
+- Native Azure integration with Portal, CLI, and ARM templates
+- Centralized backup management across all Azure resources
+- Built-in Azure RBAC and Azure Policy support
+- Lower operational overhead and cost
+- Best for: Production workloads on Azure with governance requirements
+
+**🔄 Velero (Recommended for multi-cloud/hybrid scenarios)**
+- Open-source, cloud-agnostic solution
+- CLI-first automation workflows
+- Large community and plugin ecosystem
+- Application-specific backup hooks
+- Best for: Multi-cloud deployments, migration scenarios, advanced customization
+
+**Quick Decision Guide:**
+- ✅ **Use Azure Backup** if you're all-in on Azure and want simplicity
+- ✅ **Use Velero** if you need multi-cloud portability or advanced hooks
+- ✅ **Use both** for redundancy in critical environments
+
 ## Backup Strategy
 
 ### 1. Infrastructure as Code (IaC) Backup
@@ -46,9 +138,181 @@ terraform {
 }
 ```
 
-### 2. Kubernetes Objects Backup with Velero
+### 2. Kubernetes Objects Backup
 
-[Velero](https://velero.io/) is the industry-standard solution for Kubernetes backup.
+Microsoft recommends two approaches for backing up Kubernetes objects and persistent volumes:
+
+**Option A: Azure Backup for AKS (Recommended - Native Azure Solution)**  
+**Option B: Velero (Alternative - Open Source, Cross-Cloud)**
+
+Choose based on your requirements:
+- **Azure Backup** if you prefer native Azure integration, Azure portal management, and simpler setup
+- **Velero** if you need cross-cloud portability or prefer CLI-first workflows
+
+---
+
+### 2A. Azure Backup for AKS (Recommended)
+
+[Azure Backup for AKS](https://learn.microsoft.com/azure/backup/azure-kubernetes-service-cluster-backup) is Microsoft's native backup solution with deep Azure integration.
+
+**Key Benefits:**
+- ✅ Native Azure integration (Portal, CLI, ARM templates)
+- ✅ No separate storage account management
+- ✅ Azure RBAC and Azure Policy integration
+- ✅ Centralized backup management across Azure resources
+- ✅ Compliance and governance built-in
+
+#### Prerequisites
+
+```bash
+# Enable required CSI drivers and snapshot controller
+export RG_NAME="<your-aks-resource-group>"
+export AKS_NAME="<your-aks-cluster-name>"
+
+az aks update \
+  --resource-group $RG_NAME \
+  --name $AKS_NAME \
+  --enable-disk-driver \
+  --enable-file-driver \
+  --enable-blob-driver \
+  --enable-snapshot-controller \
+  --yes
+```
+
+#### Setup Azure Backup Vault
+
+```bash
+# Create backup vault
+export BACKUP_RG="aks-backup-rg"
+export BACKUP_VAULT="aks-backup-vault"
+export LOCATION="westeurope"
+
+az group create --name $BACKUP_RG --location $LOCATION
+
+az dataprotection backup-vault create \
+  --resource-group $BACKUP_RG \
+  --vault-name $BACKUP_VAULT \
+  --location $LOCATION \
+  --type SystemAssigned \
+  --storage-settings datastore-type="VaultStore" type="LocallyRedundant"
+```
+
+#### Configure Backup Policy
+
+```bash
+# Create backup policy (daily backups, 30-day retention)
+az dataprotection backup-policy create \
+  --resource-group $BACKUP_RG \
+  --vault-name $BACKUP_VAULT \
+  --name "DailyAKSBackup" \
+  --policy '{
+    "datasourceTypes": ["Microsoft.ContainerService/managedClusters"],
+    "objectType": "BackupPolicy",
+    "policyRules": [
+      {
+        "backupParameters": {
+          "backupType": "Incremental",
+          "objectType": "AzureBackupParams"
+        },
+        "dataStore": {
+          "dataStoreType": "OperationalStore",
+          "objectType": "DataStoreInfoBase"
+        },
+        "name": "BackupDaily",
+        "objectType": "AzureBackupRule",
+        "trigger": {
+          "objectType": "ScheduleBasedTriggerContext",
+          "schedule": {
+            "repeatingTimeIntervals": [
+              "R/2026-02-01T02:00:00+00:00/P1D"
+            ]
+          }
+        }
+      },
+      {
+        "isDefault": true,
+        "lifecycles": [
+          {
+            "deleteAfter": {
+              "duration": "P30D",
+              "objectType": "AbsoluteDeleteOption"
+            },
+            "sourceDataStore": {
+              "dataStoreType": "OperationalStore",
+              "objectType": "DataStoreInfoBase"
+            }
+          }
+        ],
+        "name": "Default",
+        "objectType": "AzureRetentionRule"
+      }
+    ]
+  }'
+
+# Enable backup on AKS cluster
+az dataprotection backup-instance create \
+  --resource-group $BACKUP_RG \
+  --vault-name $BACKUP_VAULT \
+  --backup-instance '{
+    "properties": {
+      "dataSourceInfo": {
+        "resourceID": "/subscriptions/<subscription-id>/resourceGroups/'$RG_NAME'/providers/Microsoft.ContainerService/managedClusters/'$AKS_NAME'",
+        "resourceType": "Microsoft.ContainerService/managedClusters",
+        "objectType": "Datasource"
+      },
+      "policyInfo": {
+        "policyId": "/subscriptions/<subscription-id>/resourceGroups/'$BACKUP_RG'/providers/Microsoft.DataProtection/backupVaults/'$BACKUP_VAULT'/backupPolicies/DailyAKSBackup"
+      },
+      "objectType": "BackupInstance"
+    }
+  }'
+```
+
+#### Restore from Azure Backup
+
+```bash
+# List available recovery points
+az dataprotection recovery-point list \
+  --resource-group $BACKUP_RG \
+  --vault-name $BACKUP_VAULT \
+  --backup-instance-name <backup-instance-name>
+
+# Restore to original cluster
+az dataprotection backup-instance restore trigger \
+  --resource-group $BACKUP_RG \
+  --vault-name $BACKUP_VAULT \
+  --backup-instance-name <backup-instance-name> \
+  --recovery-point-id <recovery-point-id> \
+  --restore-target-info '{
+    "objectType": "RestoreTargetInfo",
+    "recoveryOption": "FailIfExists",
+    "restoreLocation": "westeurope",
+    "datasourceInfo": {
+      "resourceID": "/subscriptions/<subscription-id>/resourceGroups/'$RG_NAME'/providers/Microsoft.ContainerService/managedClusters/'$AKS_NAME'",
+      "resourceType": "Microsoft.ContainerService/managedClusters",
+      "objectType": "Datasource"
+    }
+  }'
+```
+
+---
+
+### 2B. Velero (Alternative)
+
+[Velero](https://velero.io/) is an open-source Kubernetes backup solution recommended by Microsoft as an alternative for cross-cloud portability.
+
+**Key Benefits:**
+- ✅ Cross-cloud portability (Azure, AWS, GCP, on-premises)
+- ✅ CLI-first workflow for automation
+- ✅ Large community and plugin ecosystem
+- ✅ Granular backup/restore with label selectors
+- ✅ Pre/post backup hooks for application consistency
+
+**When to use Velero:**
+- Multi-cloud or hybrid deployments
+- Need for application-specific hooks
+- Preference for CLI-driven workflows
+- Existing Velero expertise in the team
 
 #### Installation
 
@@ -666,17 +930,30 @@ az storage account management-policy create \
 
 ## Well-Architected Framework Impact
 
+This comprehensive backup and disaster recovery guide aligns with the **Reliability** pillar of the Azure Well-Architected Framework.
+
 | Pillar | Score Impact | Justification |
 |--------|--------------|---------------|
-| Reliability | +2 points (92→94/100) | Comprehensive backup/restore capability with validated DR plan |
-| Operational Excellence | +1 point (87→88/100) | Automated backup processes and documented runbooks |
-| Cost Optimization | +1 point | Optimized backup retention with lifecycle policies |
+| Reliability | +2-3 points (92→94-95/100) | Dual backup strategies (Azure Backup + Velero), comprehensive DR plan, validated restore procedures |
+| Operational Excellence | +1 point (87→88/100) | Automated backup processes, documented runbooks, quarterly DR testing |
+| Cost Optimization | +1 point | Optimized backup retention with lifecycle policies, native Azure integration reduces overhead |
 
 **Overall WAF Score Improvement**: +2-3 points (95→97-98/100)
 
+**Backup Solution Comparison:**
+
+| Feature | Azure Backup for AKS | Velero |
+|---------|---------------------|--------|
+| Cloud Integration | Native Azure (best) | Multi-cloud |
+| Management | Azure Portal/CLI | CLI only |
+| Cost | Lower (native) | Higher (storage + compute) |
+| Compliance | Azure Policy/RBAC built-in | Manual configuration |
+| Recommended For | Azure-native deployments | Multi-cloud/hybrid |
+
 ## Additional Resources
 
-- [Velero Documentation](https://velero.io/docs/)
 - [Azure Backup for AKS](https://learn.microsoft.com/azure/backup/azure-kubernetes-service-cluster-backup)
+- [AKS Best Practices - Storage and Backups](https://learn.microsoft.com/azure/aks/operator-best-practices-storage)
+- [Velero Documentation](https://velero.io/docs/)
 - [AKS Disaster Recovery](https://learn.microsoft.com/azure/aks/operator-best-practices-multi-region)
 - [Azure Storage Lifecycle Management](https://learn.microsoft.com/azure/storage/blobs/lifecycle-management-overview)

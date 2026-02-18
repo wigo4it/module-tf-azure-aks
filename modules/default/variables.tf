@@ -228,8 +228,8 @@ variable "disk_encryption_set_id" {
     # Create Disk Encryption Set
     resource "azurerm_disk_encryption_set" "aks" {
       name                = "aks-cmk-encryption"
-      resource_group_name = azurerm_resource_group.rg.name
-      location            = azurerm_resource_group.rg.location
+      resource_group_name = var.resource_group_name
+      location            = var.location
       key_vault_key_id    = azurerm_key_vault_key.aks.id
       
       identity {
