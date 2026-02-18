@@ -24,3 +24,17 @@ cluster_name = "haven-test"
 #   cluster_auto_scaling_max_count = 10
 # }
 existing_log_analytics_workspace_id = "/subscriptions/f88ec198-1d77-40ea-b4d8-d065ed1073a4/resourceGroups/rg-haven-monitoring-test/providers/Microsoft.OperationalInsights/workspaces/law-haven-test"
+container_registry_id               = "/subscriptions/f88ec198-1d77-40ea-b4d8-d065ed1073a4/resourceGroups/rg-haven-acr-test/providers/Microsoft.ContainerRegistry/registries/acrhaven20260218143001"
+disk_encryption_set_id              = "REPLACE_WITH_DES_ID"
+monitoring_action_group_id          = "REPLACE_WITH_ACTION_GROUP_ID"
+enable_monitoring_alerts            = true
+
+# Enhanced node pool configuration with ephemeral OS disks for better performance
+node_pool_config = {
+  vm_size                        = "Standard_D2ads_v6"
+  node_count                     = 3
+  os_disk_type                   = "Ephemeral"
+  cluster_auto_scaling_enabled   = true
+  cluster_auto_scaling_min_count = 3
+  cluster_auto_scaling_max_count = 5
+}

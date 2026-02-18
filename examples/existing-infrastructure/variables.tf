@@ -59,3 +59,39 @@ variable "existing_log_analytics_workspace_id" {
   description = "ID of existing Log Analytics workspace for monitoring"
   type        = string
 }
+variable "container_registry_id" {
+  description = "The ID of an existing Azure Container Registry to attach to the AKS cluster."
+  type        = string
+  default     = null
+}
+
+variable "disk_encryption_set_id" {
+  description = "The ID of the Disk Encryption Set for CMK encryption."
+  type        = string
+  default     = null
+}
+
+variable "monitoring_action_group_id" {
+  description = "The ID of the action group for monitoring alerts."
+  type        = string
+  default     = null
+}
+
+variable "enable_monitoring_alerts" {
+  description = "Enable monitoring alerts for the AKS cluster."
+  type        = bool
+  default     = true
+}
+
+variable "additional_tags" {
+  description = "Additional tags to apply to all resources."
+  type        = map(string)
+  default = {
+    Environment = "test"
+    ManagedBy   = "terraform"
+    CostCenter  = "platform-engineering"
+    Owner       = "platform-team"
+    Project     = "aks-haven"
+    Compliance  = "waf-compliant"
+  }
+}

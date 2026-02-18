@@ -74,6 +74,6 @@ resource "azurerm_resource_group_policy_assignment" "pod_security" {
   # Ensure the AKS cluster and resource group exist first
   depends_on = [
     azurerm_kubernetes_cluster.default,
-    azurerm_resource_group.rg
+    local.resource_group
   ]
 }

@@ -7,7 +7,7 @@ resource "azurerm_monitor_metric_alert" "node_cpu" {
   count = var.monitoring_alerts.enabled ? 1 : 0
 
   name                = "${var.name}-node-cpu-alert"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group.name
   scopes              = [azurerm_kubernetes_cluster.default.id]
   description         = "Alert when average node CPU usage exceeds ${var.monitoring_alerts.node_cpu_threshold}%"
   severity            = 2
@@ -38,7 +38,7 @@ resource "azurerm_monitor_metric_alert" "node_memory" {
   count = var.monitoring_alerts.enabled ? 1 : 0
 
   name                = "${var.name}-node-memory-alert"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group.name
   scopes              = [azurerm_kubernetes_cluster.default.id]
   description         = "Alert when average node memory usage exceeds ${var.monitoring_alerts.node_memory_threshold}%"
   severity            = 2
@@ -69,7 +69,7 @@ resource "azurerm_monitor_metric_alert" "pod_restarts" {
   count = var.monitoring_alerts.enabled ? 1 : 0
 
   name                = "${var.name}-pod-restart-alert"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group.name
   scopes              = [azurerm_kubernetes_cluster.default.id]
   description         = "Alert when pod restarts exceed ${var.monitoring_alerts.pod_restart_threshold} in 15 minutes"
   severity            = 3
@@ -100,7 +100,7 @@ resource "azurerm_monitor_metric_alert" "disk_usage" {
   count = var.monitoring_alerts.enabled ? 1 : 0
 
   name                = "${var.name}-disk-usage-alert"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group.name
   scopes              = [azurerm_kubernetes_cluster.default.id]
   description         = "Alert when node disk usage exceeds ${var.monitoring_alerts.disk_usage_threshold}%"
   severity            = 2
@@ -131,7 +131,7 @@ resource "azurerm_monitor_metric_alert" "node_not_ready" {
   count = var.monitoring_alerts.enabled ? 1 : 0
 
   name                = "${var.name}-node-not-ready-alert"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group.name
   scopes              = [azurerm_kubernetes_cluster.default.id]
   description         = "Alert when any node is in NotReady state"
   severity            = 1 # Critical
@@ -174,7 +174,7 @@ resource "azurerm_monitor_metric_alert" "api_server_availability" {
   count = var.monitoring_alerts.enabled ? 1 : 0
 
   name                = "${var.name}-api-server-alert"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = local.resource_group.name
   scopes              = [azurerm_kubernetes_cluster.default.id]
   description         = "Alert when API server availability drops below 99.9%"
   severity            = 1 # Critical

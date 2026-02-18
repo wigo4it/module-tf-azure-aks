@@ -5,8 +5,6 @@
 # KISS Principle: This example only exposes essential configuration.
 # All other settings use module's WAF-compliant defaults.
 
-data "azurerm_client_config" "current" {}
-
 # DRY Principle: Define complex objects once in locals
 locals {
   # Construct node pool configuration using sensible composition
@@ -24,7 +22,7 @@ module "haven" {
   # Essential configuration (SRP: only what's specific to this example)
   name                = "aks-${var.cluster_name}"
   location            = var.location
-  resource_group_name = "rg-560x-${var.cluster_name}"
+  resource_group_name = azurerm_resource_group.aks.name
 
   # Existing infrastructure integration
   virtual_network = {
@@ -50,6 +48,42 @@ module "haven" {
   }
 
   existing_log_analytics_workspace_id = var.existing_log_analytics_workspace_id
+
+  # Optional: Attach Azure Container Registry
+  container_registry_id = var.container_registry_id
+
+  # WAF Security: Customer-Managed Keys for disk encryption
+  disk_encryption_set_id = var.disk_encryption_set_id
+
+  # WAF Operational Excellence: Monitoring alerts
+  monitoring_alerts = var.enable_monitoring_alerts && var.monitoring_action_group_id != null ? {
+    enabled               = true
+    action_group_ids      = [var.monitoring_action_group_id]
+    node_cpu_threshold    = 80
+    node_memory_threshold = 85
+    pod_restart_threshold = 5
+    disk_usage_threshold  = 90
+    api_server_latency_ms = 1000
+    } : {
+    enabled               = false
+    action_group_ids      = []
+    node_cpu_threshold    = 80
+    node_memory_threshold = 80
+    pod_restart_threshold = 5
+    disk_usage_threshold  = 85
+    api_server_latency_ms = 1000
+  }
+
+  # Enhanced tagging for better governance
+  tags = merge(
+    var.additional_tags,
+    {
+      deployment_method  = "terraform"
+      module_name        = "module-haven-cluster-azure-digilab"
+      kubernetes_version = var.kubernetes_version
+      cluster_name       = var.cluster_name
+    }
+  )
 
   # Explicit dependencies to ensure existing infrastructure is created first
   depends_on = [

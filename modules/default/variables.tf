@@ -68,8 +68,9 @@ variable "name" {
 }
 
 variable "resource_group_name" {
-  description = "(Required) Name of the resource group where resources will be created."
+  description = "(Optional) Name of existing resource group to use. If not provided, a new resource group will be created with name 'rg-{cluster_name}'."
   type        = string
+  default     = null
 }
 
 variable "virtual_network" {
@@ -177,6 +178,30 @@ variable "azure_policy_enabled" {
   description = "(Optional) Enable Azure Policy Add-On to enforce organizational standards and security baselines (Pod Security Standards, CIS Benchmark). Recommended for production to ensure policy compliance at scale. Default: enabled."
   type        = bool
   default     = true
+}
+
+variable "container_registry_id" {
+  description = <<-EOT
+    (Optional) The resource ID of the Azure Container Registry to attach to the AKS cluster.
+    
+    When provided, the AKS cluster's kubelet managed identity will be granted AcrPull role permissions,
+    enabling nodes to pull container images from the specified ACR without additional authentication.
+    
+    Benefits:
+    - Seamless image pulls from private ACR
+    - No need for image pull secrets
+    - Automatic authentication using managed identity
+    - Simplified container deployment workflow
+    
+    Example:
+    ```
+    container_registry_id = azurerm_container_registry.acr.id
+    ```
+    
+    For more information: https://learn.microsoft.com/azure/aks/cluster-container-registry-integration
+  EOT
+  type        = string
+  default     = null
 }
 
 variable "disk_encryption_set_id" {
