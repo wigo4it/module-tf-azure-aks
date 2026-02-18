@@ -3,6 +3,16 @@ output "cluster_name" {
   value       = azurerm_kubernetes_cluster.default.name
 }
 
+output "resource_group_name" {
+  description = "Name of the resource group containing the AKS cluster"
+  value       = azurerm_resource_group.rg.name
+}
+
+output "resource_group_location" {
+  description = "Location of the resource group"
+  value       = azurerm_resource_group.rg.location
+}
+
 output "cluster_oidc_issuer_url" {
   value = azurerm_kubernetes_cluster.default.oidc_issuer_url
 }
@@ -40,8 +50,12 @@ output "pod_security_policy_status" {
     excluded_namespaces = var.pod_security_policy.excluded_namespaces
     recommendation      = var.pod_security_policy.effect == "audit" ? "Consider changing effect to 'deny' for production after testing" : "Pod Security Standards enforced in deny mode"
     } : {
-    enabled        = false
-    recommendation = "Enable Pod Security Standards for CIS Kubernetes Benchmark compliance"
+    enabled             = false
+    level               = null
+    effect              = null
+    policy_assignment   = null
+    excluded_namespaces = []
+    recommendation      = "Enable Pod Security Standards for CIS Kubernetes Benchmark compliance"
   }
 }
 
@@ -57,7 +71,13 @@ output "monitoring_alerts_status" {
     disk_usage_threshold  = "${var.monitoring_alerts.disk_usage_threshold}%"
     recommendation        = "Monitor alerts via Azure Monitor Alerts dashboard"
     } : {
-    enabled        = false
-    recommendation = "Enable monitoring alerts for proactive incident prevention (+2 WAF points)"
+    enabled               = false
+    alerts_configured     = []
+    action_group_count    = 0
+    node_cpu_threshold    = null
+    node_memory_threshold = null
+    pod_restart_threshold = null
+    disk_usage_threshold  = null
+    recommendation        = "Enable monitoring alerts for proactive incident prevention (+2 WAF points)"
   }
 }

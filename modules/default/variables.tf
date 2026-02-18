@@ -46,8 +46,8 @@ variable "aks_default_node_pool" {
       drain_timeout_in_minutes = number
       max_surge                = string
       }), {
-      drain_timeout_in_minutes = 5
-      max_surge                = "10%"
+      drain_timeout_in_minutes = 30    # WAF: Honor PodDisruptionBudgets during upgrades
+      max_surge                = "33%" # WAF: Balance upgrade speed with cost
     })
   })
 }
@@ -138,8 +138,8 @@ variable "aks_additional_node_pools" {
       drain_timeout_in_minutes = number
       max_surge                = string
       }), {
-      drain_timeout_in_minutes = 5
-      max_surge                = "10%"
+      drain_timeout_in_minutes = 30    # WAF: Honor PodDisruptionBudgets during upgrades
+      max_surge                = "33%" # WAF: Balance upgrade speed with cost
     })
   }))
   default = {}

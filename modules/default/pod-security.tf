@@ -54,6 +54,7 @@ resource "azurerm_resource_group_policy_assignment" "pod_security" {
   description          = "Enforces ${title(var.pod_security_policy.level)} Pod Security Standards on AKS cluster ${var.name} using ${var.pod_security_policy.effect} mode. Automatically excludes system namespaces. Learn more: https://learn.microsoft.com/azure/aks/use-azure-policy"
   resource_group_id    = azurerm_resource_group.rg.id
   policy_definition_id = local.selected_initiative.id
+  location             = var.location
 
   # Parameters for the policy initiative
   parameters = jsonencode({
@@ -72,24 +73,7 @@ resource "azurerm_resource_group_policy_assignment" "pod_security" {
 
   # Ensure the AKS cluster and resource group exist first
   depends_on = [
-    azurerm_kubernetes_cluster.aks,
+    azurerm_kubernetes_cluster.default,
     azurerm_resource_group.rg
   ]
-}
-
-# Output for policy status
-output "pod_security_policy_status" {
-  description = "Status of the Pod Security Standards policy enforcement"
-  value = var.pod_security_policy.enabled && var.pod_security_policy.level != "disabled" ? {
-    enabled             = true
-    level               = var.pod_security_policy.level
-    effect              = var.pod_security_policy.effect
-    initiative_name     = local.selected_initiative.name
-    excluded_namespaces = local.all_excluded_namespaces
-    assignment_id       = try(azurerm_resource_group_policy_assignment.pod_security[0].id, null)
-    recommendation      = var.pod_security_policy.effect == "audit" ? "⚠️  Consider changing to 'deny' mode for production" : "✅ Policy enforcement active"
-    } : {
-    enabled        = false
-    recommendation = "🔴 CRITICAL: Enable Pod Security Standards for production (set level to 'baseline' or 'restricted')"
-  }
 }
