@@ -52,7 +52,7 @@ resource "azurerm_resource_group_policy_assignment" "pod_security" {
   name                 = "${var.name}-pod-security-${var.pod_security_policy.level}"
   display_name         = "AKS Pod Security Standards - ${title(var.pod_security_policy.level)} (${title(var.pod_security_policy.effect)})"
   description          = "Enforces ${title(var.pod_security_policy.level)} Pod Security Standards on AKS cluster ${var.name} using ${var.pod_security_policy.effect} mode. Automatically excludes system namespaces. Learn more: https://learn.microsoft.com/azure/aks/use-azure-policy"
-  resource_group_id    = azurerm_resource_group.rg.id
+  resource_group_id    = local.resource_group.id
   policy_definition_id = local.selected_initiative.id
   location             = var.location
 

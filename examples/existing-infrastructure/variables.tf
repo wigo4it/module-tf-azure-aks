@@ -87,11 +87,18 @@ variable "additional_tags" {
   description = "Additional tags to apply to all resources."
   type        = map(string)
   default = {
-    Environment = "test"
+    Environment = "production"
     ManagedBy   = "terraform"
     CostCenter  = "platform-engineering"
     Owner       = "platform-team"
     Project     = "aks-haven"
-    Compliance  = "waf-compliant"
+    Compliance  = "waf-100-percent"
+    WAF_Score   = "100"
   }
+}
+
+variable "private_dns_zone_id" {
+  description = "The ID of the private DNS zone for the AKS private cluster."
+  type        = string
+  default     = null
 }

@@ -47,6 +47,45 @@ module "haven" {
     azure_rbac_enabled     = true
   }
 
+  # WAF Security: Pod Security Standards - Production Grade (Restricted + Deny)
+  pod_security_policy = {
+    enabled = true
+    level   = "restricted" # Heavily restricted - follows pod hardening best practices
+    effect  = "deny"       # Block non-compliant deployments (production mode)
+    excluded_namespaces = [
+      "kube-system",
+      "gatekeeper-system",
+      "azure-arc"
+    ]
+  }
+
+  # WAF Security: Microsoft Defender for Containers (explicit enable for visibility)
+  microsoft_defender_enabled = true
+
+  # WAF Security: Private cluster with private DNS (production recommended)
+  private_cluster_enabled  = true
+  private_dns_zone_id      = var.private_dns_zone_id
+  aks_authorized_ip_ranges = [] # Empty for private cluster
+
+  # WAF Security: Workload Identity for secure pod-to-Azure authentication
+  workload_identity_enabled = true
+  oidc_issuer_enabled       = true
+
+  # WAF Security: Key Vault Secrets Provider with auto-rotation
+  key_vault_secrets_provider = {
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "2m"
+  }
+
+  # WAF Reliability: Standard SKU for 99.95% SLA
+  sku_tier = "Standard"
+
+  # WAF Reliability: Automatic security patches
+  automatic_upgrade_channel = "patch"
+
+  # WAF Security: Comprehensive audit logging
+  enable_audit_logs = true
+
   existing_log_analytics_workspace_id = var.existing_log_analytics_workspace_id
 
   # Optional: Attach Azure Container Registry
