@@ -50,22 +50,19 @@ resource "azurerm_subnet" "networking" {
   ]
 }
 
-# Private DNS Zone for AKS private cluster
-resource "azurerm_private_dns_zone" "aks" {
+# Reference existing Private DNS Zone for AKS private cluster in hub subscription
+data "azurerm_private_dns_zone" "aks" {
+  provider            = azurerm.hub
   name                = "privatelink.westeurope.azmk8s.io"
-  resource_group_name = azurerm_resource_group.networking.name
-
-  tags = {
-    Purpose = "Haven Integration Testing"
-    Type    = "Private DNS Zone for AKS"
-  }
+  resource_group_name = "rg-hub-prod-dns-we"
 }
 
-# Link Private DNS Zone to VNet
+# Link existing Private DNS Zone to test VNet
 resource "azurerm_private_dns_zone_virtual_network_link" "aks" {
-  name                  = "vnet-link-aks"
-  resource_group_name   = azurerm_resource_group.networking.name
-  private_dns_zone_name = azurerm_private_dns_zone.aks.name
+  provider              = azurerm.hub
+  name                  = "vnet-link-aks-haven-test"
+  resource_group_name   = "rg-hub-prod-dns-we"
+  private_dns_zone_name = data.azurerm_private_dns_zone.aks.name
   virtual_network_id    = azurerm_virtual_network.networking.id
   registration_enabled  = false
 
@@ -329,7 +326,7 @@ output "test_action_group_id" {
 }
 output "test_private_dns_zone_id" {
   description = "The resource ID of the private DNS zone for AKS private cluster"
-  value       = azurerm_private_dns_zone.aks.id
+  value       = data.azurerm_private_dns_zone.aks.id
 }
 
 output "test_resource_group_name" {

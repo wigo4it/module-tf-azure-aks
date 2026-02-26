@@ -88,8 +88,8 @@ module "haven" {
 
   existing_log_analytics_workspace_id = var.existing_log_analytics_workspace_id
 
-  # Optional: Attach Azure Container Registry
-  container_registry_id = var.container_registry_id
+  # Attach Azure Container Registry (created in setup-test-infrastructure.tf)
+  container_registry_id = azurerm_container_registry.acr.id
 
   # WAF Security: Customer-Managed Keys for disk encryption
   disk_encryption_set_id = var.disk_encryption_set_id
@@ -124,9 +124,13 @@ module "haven" {
     }
   )
 
-  # Explicit dependencies to ensure existing infrastructure is created first
-  depends_on = [
-    azurerm_virtual_network.networking,
-    azurerm_subnet.networking
-  ]
+}
+
+# WAF Security: Grant the deploying identity Azure RBAC Cluster Admin so kubectl works
+# When azure_rbac_enabled=true, Kubernetes access is controlled entirely through Azure RBAC
+# (admin_group_object_ids alone is insufficient — an explicit role assignment is required)
+resource "azurerm_role_assignment" "aks_rbac_cluster_admin" {
+  principal_id         = data.azurerm_client_config.current.object_id
+  role_definition_name = "Azure Kubernetes Service RBAC Cluster Admin"
+  scope                = module.haven.cluster_id
 }

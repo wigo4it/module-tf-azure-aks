@@ -45,7 +45,7 @@ validate:
   <<: *setup
   stage: validate
   script:
-    - DRY_RUN=true ./scripts/integration-test/integration-test.sh all
+    - DRY_RUN=true ./scripts/integration-test/test.sh all
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "main"'
@@ -55,7 +55,7 @@ test-minimal:
   <<: *setup
   stage: test-minimal
   script:
-    - ./scripts/integration-test/integration-test.sh minimal
+    - ./scripts/integration-test/test.sh minimal
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
@@ -66,7 +66,7 @@ test-existing-infrastructure:
   <<: *setup
   stage: test-existing-infrastructure
   script:
-    - ./scripts/integration-test/integration-test.sh existing-infrastructure
+    - ./scripts/integration-test/test.sh existing-infrastructure
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
@@ -77,7 +77,7 @@ test-all:
   <<: *setup
   stage: test-all
   script:
-    - ./scripts/integration-test/integration-test.sh all
+    - ./scripts/integration-test/test.sh all
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - when: manual

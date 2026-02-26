@@ -46,11 +46,10 @@ cluster_name = "haven-test"
 #   cluster_auto_scaling_min_count = 5                     # More nodes
 #   cluster_auto_scaling_max_count = 10
 # }
-existing_log_analytics_workspace_id = "/subscriptions/f88ec198-1d77-40ea-b4d8-d065ed1073a4/resourceGroups/rg-haven-monitoring-test/providers/Microsoft.OperationalInsights/workspaces/law-haven-test"
-container_registry_id               = "/subscriptions/f88ec198-1d77-40ea-b4d8-d065ed1073a4/resourceGroups/rg-haven-acr-test/providers/Microsoft.ContainerRegistry/registries/acrhaven20260218143001"
-disk_encryption_set_id              = "/subscriptions/f88ec198-1d77-40ea-b4d8-d065ed1073a4/resourceGroups/rg-haven-security-test/providers/Microsoft.Compute/diskEncryptionSets/des-aks-test"
-monitoring_action_group_id          = "/subscriptions/f88ec198-1d77-40ea-b4d8-d065ed1073a4/resourceGroups/rg-haven-alerts-test/providers/Microsoft.Insights/actionGroups/ag-aks-alerts-test"
-private_dns_zone_id                 = "/subscriptions/f88ec198-1d77-40ea-b4d8-d065ed1073a4/resourceGroups/rg-haven-networking-test/providers/Microsoft.Network/privateDnsZones/privatelink.westeurope.azmk8s.io"
+existing_log_analytics_workspace_id = "/subscriptions/93eb1923-1314-4885-9ede-dacba91df01d/resourceGroups/rg-haven-monitoring-test/providers/Microsoft.OperationalInsights/workspaces/law-haven-test"
+disk_encryption_set_id              = "/subscriptions/93eb1923-1314-4885-9ede-dacba91df01d/resourceGroups/rg-haven-security-test/providers/Microsoft.Compute/diskEncryptionSets/des-aks-test"
+monitoring_action_group_id          = "/subscriptions/93eb1923-1314-4885-9ede-dacba91df01d/resourceGroups/rg-haven-alerts-test/providers/Microsoft.Insights/actionGroups/ag-aks-alerts-test"
+private_dns_zone_id                 = "/subscriptions/bacfdef3-cc63-4576-a0f6-662c478186c4/resourceGroups/rg-hub-prod-dns-we/providers/Microsoft.Network/privateDnsZones/privatelink.westeurope.azmk8s.io"
 enable_monitoring_alerts            = false # Disabled: alerts require cluster metrics to exist first
 
 # Enhanced node pool configuration with ephemeral OS disks for better performance

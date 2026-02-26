@@ -13,9 +13,10 @@ This directory contains GitLab CI/CD configuration files for the Haven AKS Terra
 .gitlab-ci.yml                   # Main CI configuration (in repo root)
 scripts/
 ├── integration-test/
-│   ├── integration-test.sh      # Main integration test script
-│   └── demo-integration-test.sh # Demo integration test script
-└── tf-plan.sh                   # Terraform plan script
+│   ├── test.sh              # Integration test orchestrator (all steps)
+│   └── lib/
+│       └── common.sh        # Shared logging, run_step, JUnit helpers
+└── tf-plan.sh               # Terraform plan script
 ```
 
 ## Configuration Files
@@ -55,7 +56,7 @@ Configure these variables in your GitLab project settings (Settings → CI/CD �
 - **Trigger**: Merge requests and main branch commits
 - **Duration**: ~2-3 minutes
 - **Purpose**: Quick validation without deploying resources
-- **Command**: `DRY_RUN=true ./integration-test.sh all`
+- **Command**: `DRY_RUN=true ./test.sh all`
 
 ### 2. Test Stages
 

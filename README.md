@@ -223,26 +223,26 @@ This module includes a comprehensive integration test suite that validates both 
 
 ```bash
 # Test the minimal example
-cd examples && ./integration-test.sh minimal
+cd examples && ./test.sh minimal
 
 # Test the existing-infrastructure example
-cd examples && ./integration-test.sh existing-infrastructure
+cd examples && ./test.sh existing-infrastructure
 
 # Test all examples
-cd examples && ./integration-test.sh all
+cd examples && ./test.sh all
 ```
 
 ### Advanced Testing Options
 
 ```bash
 # Dry run (no actual deployment)
-DRY_RUN=true ./integration-test.sh all
+DRY_RUN=true ./test.sh all
 
 # Skip infrastructure destruction (for debugging)
-SKIP_DESTROY=true ./integration-test.sh minimal
+SKIP_DESTROY=true ./test.sh minimal
 
 # CI/CD mode (no colors, structured output)
-CI_MODE=true ./integration-test.sh all
+CI_MODE=true ./test.sh all
 ```
 
 The integration test suite:

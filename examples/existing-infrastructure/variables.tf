@@ -59,12 +59,6 @@ variable "existing_log_analytics_workspace_id" {
   description = "ID of existing Log Analytics workspace for monitoring"
   type        = string
 }
-variable "container_registry_id" {
-  description = "The ID of an existing Azure Container Registry to attach to the AKS cluster."
-  type        = string
-  default     = null
-}
-
 variable "disk_encryption_set_id" {
   description = "The ID of the Disk Encryption Set for CMK encryption."
   type        = string

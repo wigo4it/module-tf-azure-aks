@@ -1,6 +1,83 @@
-# =============================
-# Required Variables
-# =============================
+# ==============================================================================
+# variables.tf — AKS Module Input Variables
+#
+# Variables are grouped by concern so that related settings can be found and
+# changed together. Within each section, REQUIRED variables appear first,
+# followed by OPTIONAL ones roughly in order of how often they are changed.
+#
+# Sections:
+#   1. Core                — Cluster identity, placement, lifecycle & tags
+#   2. Node Pools          — Default and additional node pool configuration
+#   3. Networking          — VNet, CNI, DNS, private cluster, load balancer
+#   4. Identity & Access   — RBAC, Azure AD, workload / OIDC identity
+#   5. Security            — Pod security, policy enforcement, encryption
+#   6. Add-ons             — ACR, storage drivers, autoscaler, image cleaner
+#   7. Observability       — Log Analytics, audit logs, monitoring alerts
+# ==============================================================================
+
+
+# ==============================================================================
+# 1. CORE — Cluster Identity, Placement, Lifecycle & Tags
+# ==============================================================================
+
+variable "name" {
+  description = "(Required) The name of the AKS cluster."
+  type        = string
+}
+
+variable "location" {
+  description = "(Required) Azure region where resources will be created."
+  type        = string
+}
+
+variable "resource_group_name" {
+  description = "(Optional) Name of existing resource group to use. If not provided, a new resource group will be created with name 'rg-{cluster_name}'."
+  type        = string
+  default     = null
+}
+
+variable "kubernetes_version" {
+  description = "(Required) The Kubernetes version to use for the AKS cluster."
+  type        = string
+}
+
+variable "sku_tier" {
+  description = "(Optional) The SKU tier for the AKS cluster. Standard is recommended for production Haven clusters."
+  type        = string
+  default     = "Standard"
+
+  validation {
+    condition     = contains(["Free", "Standard", "Premium"], var.sku_tier)
+    error_message = "SKU tier must be one of: Free, Standard, Premium."
+  }
+}
+
+variable "automatic_upgrade_channel" {
+  description = "(Optional) The automatic upgrade channel for the AKS cluster."
+  type        = string
+  default     = "patch"
+}
+
+variable "dns_prefix" {
+  description = "(Optional) The DNS prefix for the AKS cluster. This will be used to create the DNS records."
+  type        = string
+  default     = null
+}
+
+variable "tags" {
+  description = "(Optional) A map of tags to assign to all resources."
+  type        = map(string)
+  default = {
+    deployment_method = "terraform"
+    module_name       = "module-haven-cluster-azure-digilab"
+  }
+}
+
+
+# ==============================================================================
+# 2. NODE POOLS — Default and Additional Node Pool Configuration
+# ==============================================================================
+
 variable "aks_default_node_pool" {
   description = <<-EOT
     (Required) Configuration for the default node pool in the AKS cluster.
@@ -52,55 +129,6 @@ variable "aks_default_node_pool" {
   })
 }
 
-variable "kubernetes_version" {
-  description = "(Required) The Kubernetes version to use for the AKS cluster."
-  type        = string
-}
-
-variable "location" {
-  description = "(Required) Azure region where resources will be created."
-  type        = string
-}
-
-variable "name" {
-  description = "(Required) The name of the AKS cluster."
-  type        = string
-}
-
-variable "resource_group_name" {
-  description = "(Optional) Name of existing resource group to use. If not provided, a new resource group will be created with name 'rg-{cluster_name}'."
-  type        = string
-  default     = null
-}
-
-variable "virtual_network" {
-  description = "(Required) Virtual network configuration for the AKS cluster. If is_existing is true, id must be provided."
-  type = object({
-    is_existing         = optional(bool, false)
-    id                  = optional(string)
-    name                = string
-    resource_group_name = string
-    address_space       = optional(list(string), [])
-    peerings            = optional(list(string), [])
-    subnet = optional(object({
-      is_existing       = optional(bool, false)
-      name              = string
-      address_prefixes  = optional(list(string), [])
-      service_endpoints = optional(list(string), ["Microsoft.Storage", "Microsoft.KeyVault", "Microsoft.ContainerRegistry"])
-    }))
-  })
-  validation {
-    condition = (
-      (try(var.virtual_network.is_existing, false) == false) ||
-      (try(var.virtual_network.is_existing, false) == true && try(var.virtual_network.id, "") != "")
-    )
-    error_message = "When 'virtual_network.is_existing' is true, 'virtual_network.id' must be provided."
-  }
-}
-
-# =============================
-# Optional Variables
-# =============================
 variable "aks_additional_node_pools" {
   description = <<-EOT
     (Optional) Map of additional node pools to create for the AKS cluster.
@@ -146,10 +174,110 @@ variable "aks_additional_node_pools" {
   default = {}
 }
 
+
+# ==============================================================================
+# 3. NETWORKING — VNet, CNI, DNS, Private Cluster & Load Balancer
+# ==============================================================================
+
+variable "virtual_network" {
+  description = "(Required) Virtual network configuration for the AKS cluster. If is_existing is true, id must be provided."
+  type = object({
+    is_existing         = optional(bool, false)
+    id                  = optional(string)
+    name                = string
+    resource_group_name = string
+    address_space       = optional(list(string), [])
+    peerings            = optional(list(string), [])
+    subnet = optional(object({
+      is_existing       = optional(bool, false)
+      name              = string
+      address_prefixes  = optional(list(string), [])
+      service_endpoints = optional(list(string), ["Microsoft.Storage", "Microsoft.KeyVault", "Microsoft.ContainerRegistry"])
+    }))
+  })
+
+  validation {
+    condition = (
+      (try(var.virtual_network.is_existing, false) == false) ||
+      (try(var.virtual_network.is_existing, false) == true && try(var.virtual_network.id, "") != "")
+    )
+    error_message = "When 'virtual_network.is_existing' is true, 'virtual_network.id' must be provided."
+  }
+}
+
+variable "network_profile" {
+  description = <<-EOT
+    (Optional) Network configuration for the AKS cluster.
+    
+    Azure CNI Overlay (Recommended - Default):
+    - Best practice for most scenarios (Microsoft recommended)
+    - Conserves VNet IP addresses (pods use separate CIDR)
+    - Supports up to 250 pods per node
+    - Better scalability and simpler IP management
+    - Set network_plugin_mode = "overlay"
+    
+    Azure CNI (Legacy):
+    - Pods consume VNet IPs (risk of IP exhaustion)
+    - Supports up to 30 pods per node (legacy) or 110 with pod subnet
+    - Set network_plugin_mode = null or omit
+    
+    For more information: https://learn.microsoft.com/azure/aks/azure-cni-overlay
+  EOT
+  type = object({
+    network_plugin      = optional(string, "azure")
+    network_plugin_mode = optional(string, "overlay")
+    network_policy      = optional(string, "calico")
+    load_balancer_sku   = optional(string, "standard")
+    ip_versions         = optional(list(string), ["IPv4"])
+    pod_cidr            = optional(string, "10.244.0.0/16")
+    service_cidr        = optional(string, "10.0.0.0/16")
+    dns_service_ip      = optional(string, "10.0.0.10")
+  })
+  default = {
+    network_plugin      = "azure"
+    network_plugin_mode = "overlay"
+    network_policy      = "calico"
+    load_balancer_sku   = "standard"
+    ip_versions         = ["IPv4"]
+    pod_cidr            = "10.244.0.0/16"
+    service_cidr        = "10.0.0.0/16"
+    dns_service_ip      = "10.0.0.10"
+  }
+
+  validation {
+    condition = (
+      var.network_profile.network_plugin_mode != "overlay" ||
+      (var.network_profile.network_plugin_mode == "overlay" && var.network_profile.pod_cidr != null)
+    )
+    error_message = "When network_plugin_mode is 'overlay', pod_cidr must be specified."
+  }
+
+  validation {
+    condition = (
+      var.network_profile.network_plugin == "azure" ||
+      var.network_profile.network_plugin_mode == null
+    )
+    error_message = "network_plugin_mode 'overlay' is only supported with network_plugin 'azure'."
+  }
+}
+
+variable "private_cluster_enabled" {
+  description = "(Optional) Enable private cluster mode to ensure API server is only accessible via private network. Strongly recommended for production environments to minimize attack surface. When enabled, the API server gets a private IP address."
+  type        = bool
+  default     = true
+}
+
+variable "private_dns_zone_id" {
+  description = "(Optional) ID of the private DNS zone to use for the AKS cluster private API server. If not provided for private clusters, Azure creates a system-managed private DNS zone. Provide a custom DNS zone for advanced networking scenarios or when integrating with existing DNS infrastructure."
+  type        = string
+  default     = null
+}
+
 variable "aks_authorized_ip_ranges" {
   description = "(Optional) List of authorized IP ranges for API server access. Only applies to public clusters (not supported on private clusters). For security compliance, explicitly specify only your organization's specific IP ranges. Empty by default to enforce explicit configuration."
   type        = list(string)
   default     = []
+
   validation {
     condition = length(var.aks_authorized_ip_ranges) == 0 || alltrue([
       for cidr in var.aks_authorized_ip_ranges : can(cidrhost(cidr, 0))
@@ -158,10 +286,38 @@ variable "aks_authorized_ip_ranges" {
   }
 }
 
-variable "aks_audit_categories" {
-  description = "(Optional) List of audit categories to enable for the AKS cluster. This is recommended for security compliance."
+variable "loadbalancer_ips" {
+  description = "(Optional) The loadbalancer IP address(es) of the public ingress controller. If not provided, an azurerm_public_ip will be created."
   type        = list(string)
-  default     = ["kube-apiserver", "kube-audit", "kube-audit-admin", "kube-controller-manager", "kube-scheduler", "cluster-autoscaler", "guard", "csi-azuredisk-controller", "csi-azurefile-controller", "csi-snapshot-controller"]
+  default     = []
+}
+
+
+# ==============================================================================
+# 4. IDENTITY & ACCESS — RBAC, Azure AD, Workload Identity & OIDC
+# ==============================================================================
+
+variable "role_based_access_control_enabled" {
+  description = "(Optional) Enable role-based access control (RBAC) for the AKS cluster. This is recommended for security compliance."
+  type        = bool
+  default     = true
+}
+
+variable "local_account_disabled" {
+  description = "(Optional) Disable local accounts to enforce Azure AD authentication and ensure all cluster access is centrally managed and audited. Required for production security compliance. When enabled, Azure AD RBAC must be configured."
+  type        = bool
+  default     = true
+
+  validation {
+    condition = (
+      var.local_account_disabled == false ||
+      (var.local_account_disabled == true &&
+        var.aks_azure_active_directory_role_based_access_control != null &&
+        var.aks_azure_active_directory_role_based_access_control.azure_rbac_enabled == true &&
+      length(var.aks_azure_active_directory_role_based_access_control.admin_group_object_ids) > 0)
+    )
+    error_message = "When 'local_account_disabled' is true, 'aks_azure_active_directory_role_based_access_control' must be configured with 'azure_rbac_enabled' set to true and valid 'admin_group_object_ids'."
+  }
 }
 
 variable "aks_azure_active_directory_role_based_access_control" {
@@ -174,116 +330,22 @@ variable "aks_azure_active_directory_role_based_access_control" {
   default = null
 }
 
-variable "azure_policy_enabled" {
-  description = "(Optional) Enable Azure Policy Add-On to enforce organizational standards and security baselines (Pod Security Standards, CIS Benchmark). Recommended for production to ensure policy compliance at scale. Default: enabled."
+variable "workload_identity_enabled" {
+  description = "(Optional) Enable workload identity for the AKS cluster."
   type        = bool
   default     = true
 }
 
-variable "container_registry_id" {
-  description = <<-EOT
-    (Optional) The resource ID of the Azure Container Registry to attach to the AKS cluster.
-    
-    When provided, the AKS cluster's kubelet managed identity will be granted AcrPull role permissions,
-    enabling nodes to pull container images from the specified ACR without additional authentication.
-    
-    Benefits:
-    - Seamless image pulls from private ACR
-    - No need for image pull secrets
-    - Automatic authentication using managed identity
-    - Simplified container deployment workflow
-    
-    Example:
-    ```
-    container_registry_id = azurerm_container_registry.acr.id
-    ```
-    
-    For more information: https://learn.microsoft.com/azure/aks/cluster-container-registry-integration
-  EOT
-  type        = string
-  default     = null
-}
-
-variable "disk_encryption_set_id" {
-  description = <<-EOT
-    (Optional) The ID of the Azure Disk Encryption Set for encrypting node OS disks and data disks with Customer-Managed Keys (CMK).
-    
-    WAF Security Pillar: Customer-Managed Keys provide enhanced control over encryption keys and meet compliance requirements.
-    
-    Benefits:
-    - Full control over key lifecycle (rotation, revocation, deletion)
-    - Integration with Azure Key Vault for centralized key management
-    - Compliance with regulations requiring customer-controlled encryption (HIPAA, PCI-DSS, etc.)
-    - Audit trail for key usage
-    
-    Prerequisites:
-    1. Create Azure Key Vault with purge protection enabled
-    2. Create a Key Vault key (RSA 2048 or higher)
-    3. Create Disk Encryption Set referencing the Key Vault key
-    4. Grant AKS cluster identity "Reader" access to Disk Encryption Set
-    5. Grant Disk Encryption Set managed identity "Key Vault Crypto Service Encryption User" role on Key Vault
-    
-    Example:
-    ```
-    # Create Disk Encryption Set
-    resource "azurerm_disk_encryption_set" "aks" {
-      name                = "aks-cmk-encryption"
-      resource_group_name = var.resource_group_name
-      location            = var.location
-      key_vault_key_id    = azurerm_key_vault_key.aks.id
-      
-      identity {
-        type = "SystemAssigned"
-      }
-    }
-    
-    # Then pass the ID to this variable
-    disk_encryption_set_id = azurerm_disk_encryption_set.aks.id
-    ```
-    
-    Cost Impact: No additional Azure cost for CMK, but requires Key Vault ($0.03 per 10,000 operations)
-    
-    Documentation: https://learn.microsoft.com/azure/aks/azure-disk-customer-managed-keys
-  EOT
-  type        = string
-  default     = null
-}
-
-variable "enable_audit_logs" {
-  description = "(Optional) Enable comprehensive audit logging for cluster activity monitoring, security compliance, and forensic analysis. Captures API server, authentication, and control plane events. Default: enabled for production compliance."
+variable "oidc_issuer_enabled" {
+  description = "(Optional) Enable OIDC issuer for the AKS cluster."
   type        = bool
   default     = true
 }
 
-variable "key_vault_secrets_provider" {
-  description = "(Optional) Key Vault Secrets Provider configuration for enhanced secret management."
-  type = object({
-    secret_rotation_enabled  = bool
-    secret_rotation_interval = string
-  })
-  default = {
-    secret_rotation_enabled  = true
-    secret_rotation_interval = "2m"
-  }
-}
 
-variable "automatic_upgrade_channel" {
-  description = "(Optional) The automatic upgrade channel for the AKS cluster."
-  type        = string
-  default     = "patch"
-}
-
-variable "dns_prefix" {
-  description = "(Optional) The DNS prefix for the AKS cluster. This will be used to create the DNS records."
-  type        = string
-  default     = null
-}
-
-variable "microsoft_defender_enabled" {
-  description = "(Optional) Enable Microsoft Defender for Containers for advanced threat protection, vulnerability scanning, and runtime security. Highly recommended for production workloads. Default: enabled for Standard/Premium SKU."
-  type        = bool
-  default     = true
-}
+# ==============================================================================
+# 5. SECURITY — Pod Standards, Policy Enforcement, Secrets & Encryption
+# ==============================================================================
 
 variable "pod_security_policy" {
   description = <<-EOT
@@ -349,135 +411,102 @@ variable "pod_security_policy" {
   }
 }
 
-variable "existing_log_analytics_workspace_id" {
-  description = "(Optional) ID of existing Log Analytics workspace to use for AKS monitoring. If not provided, a new workspace will be created."
-  type        = string
-  default     = null
-}
-
-variable "image_cleaner_enabled" {
-  description = "(Optional) Enable image cleaner to remove unused images from the AKS cluster."
+variable "azure_policy_enabled" {
+  description = "(Optional) Enable Azure Policy Add-On to enforce organizational standards and security baselines (Pod Security Standards, CIS Benchmark). Recommended for production to ensure policy compliance at scale. Default: enabled."
   type        = bool
   default     = true
 }
 
-variable "image_cleaner_interval_hours" {
-  description = "(Optional) Interval in hours for the image cleaner to run."
-  type        = number
-  default     = 48
-}
-
-variable "loadbalancer_ips" {
-  description = "(Optional) The loadbalancer IP address(es) of the public ingress controller. If not provided, an azurerm_public_ip will be created."
-  type        = list(string)
-  default     = []
-}
-
-variable "local_account_disabled" {
-  description = "(Optional) Disable local accounts to enforce Azure AD authentication and ensure all cluster access is centrally managed and audited. Required for production security compliance. When enabled, Azure AD RBAC must be configured."
+variable "microsoft_defender_enabled" {
+  description = "(Optional) Enable Microsoft Defender for Containers for advanced threat protection, vulnerability scanning, and runtime security. Highly recommended for production workloads. Default: enabled for Standard/Premium SKU."
   type        = bool
   default     = true
-
-  validation {
-    condition = (
-      var.local_account_disabled == false ||
-      (var.local_account_disabled == true &&
-        var.aks_azure_active_directory_role_based_access_control != null &&
-        var.aks_azure_active_directory_role_based_access_control.azure_rbac_enabled == true &&
-      length(var.aks_azure_active_directory_role_based_access_control.admin_group_object_ids) > 0)
-    )
-    error_message = "When 'local_account_disabled' is true, 'aks_azure_active_directory_role_based_access_control' must be configured with 'azure_rbac_enabled' set to true and valid 'admin_group_object_ids'."
-  }
 }
 
-variable "network_profile" {
-  description = <<-EOT
-    (Optional) Network configuration for the AKS cluster.
-    
-    Azure CNI Overlay (Recommended - Default):
-    - Best practice for most scenarios (Microsoft recommended)
-    - Conserves VNet IP addresses (pods use separate CIDR)
-    - Supports up to 250 pods per node
-    - Better scalability and simpler IP management
-    - Set network_plugin_mode = "overlay"
-    
-    Azure CNI (Legacy):
-    - Pods consume VNet IPs (risk of IP exhaustion)
-    - Supports up to 30 pods per node (legacy) or 110 with pod subnet
-    - Set network_plugin_mode = null or omit
-    
-    For more information: https://learn.microsoft.com/azure/aks/azure-cni-overlay
-  EOT
+variable "key_vault_secrets_provider" {
+  description = "(Optional) Key Vault Secrets Provider configuration for enhanced secret management."
   type = object({
-    network_plugin      = optional(string, "azure")
-    network_plugin_mode = optional(string, "overlay")
-    network_policy      = optional(string, "calico")
-    load_balancer_sku   = optional(string, "standard")
-    ip_versions         = optional(list(string), ["IPv4"])
-    pod_cidr            = optional(string, "10.244.0.0/16")
-    service_cidr        = optional(string, "10.0.0.0/16")
-    dns_service_ip      = optional(string, "10.0.0.10")
+    secret_rotation_enabled  = bool
+    secret_rotation_interval = string
   })
   default = {
-    network_plugin      = "azure"
-    network_plugin_mode = "overlay"
-    network_policy      = "calico"
-    load_balancer_sku   = "standard"
-    ip_versions         = ["IPv4"]
-    pod_cidr            = "10.244.0.0/16"
-    service_cidr        = "10.0.0.0/16"
-    dns_service_ip      = "10.0.0.10"
-  }
-
-  validation {
-    condition = (
-      var.network_profile.network_plugin_mode != "overlay" ||
-      (var.network_profile.network_plugin_mode == "overlay" && var.network_profile.pod_cidr != null)
-    )
-    error_message = "When network_plugin_mode is 'overlay', pod_cidr must be specified."
-  }
-
-  validation {
-    condition = (
-      var.network_profile.network_plugin == "azure" ||
-      var.network_profile.network_plugin_mode == null
-    )
-    error_message = "network_plugin_mode 'overlay' is only supported with network_plugin 'azure'."
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "2m"
   }
 }
 
-variable "oidc_issuer_enabled" {
-  description = "(Optional) Enable OIDC issuer for the AKS cluster."
-  type        = bool
-  default     = true
-}
-
-variable "private_cluster_enabled" {
-  description = "(Optional) Enable private cluster mode to ensure API server is only accessible via private network. Strongly recommended for production environments to minimize attack surface. When enabled, the API server gets a private IP address."
-  type        = bool
-  default     = true
-}
-
-variable "private_dns_zone_id" {
-  description = "(Optional) ID of the private DNS zone to use for the AKS cluster private API server. If not provided for private clusters, Azure creates a system-managed private DNS zone. Provide a custom DNS zone for advanced networking scenarios or when integrating with existing DNS infrastructure."
+variable "disk_encryption_set_id" {
+  description = <<-EOT
+    (Optional) The ID of the Azure Disk Encryption Set for encrypting node OS disks and data disks with Customer-Managed Keys (CMK).
+    
+    WAF Security Pillar: Customer-Managed Keys provide enhanced control over encryption keys and meet compliance requirements.
+    
+    Benefits:
+    - Full control over key lifecycle (rotation, revocation, deletion)
+    - Integration with Azure Key Vault for centralized key management
+    - Compliance with regulations requiring customer-controlled encryption (HIPAA, PCI-DSS, etc.)
+    - Audit trail for key usage
+    
+    Prerequisites:
+    1. Create Azure Key Vault with purge protection enabled
+    2. Create a Key Vault key (RSA 2048 or higher)
+    3. Create Disk Encryption Set referencing the Key Vault key
+    4. Grant AKS cluster identity "Reader" access to Disk Encryption Set
+    5. Grant Disk Encryption Set managed identity "Key Vault Crypto Service Encryption User" role on Key Vault
+    
+    Example:
+    ```
+    # Create Disk Encryption Set
+    resource "azurerm_disk_encryption_set" "aks" {
+      name                = "aks-cmk-encryption"
+      resource_group_name = var.resource_group_name
+      location            = var.location
+      key_vault_key_id    = azurerm_key_vault_key.aks.id
+      
+      identity {
+        type = "SystemAssigned"
+      }
+    }
+    
+    # Then pass the ID to this variable
+    disk_encryption_set_id = azurerm_disk_encryption_set.aks.id
+    ```
+    
+    Cost Impact: No additional Azure cost for CMK, but requires Key Vault ($0.03 per 10,000 operations)
+    
+    Documentation: https://learn.microsoft.com/azure/aks/azure-disk-customer-managed-keys
+  EOT
   type        = string
   default     = null
 }
 
-variable "role_based_access_control_enabled" {
-  description = "(Optional) Enable role-based access control (RBAC) for the AKS cluster. This is recommended for security compliance."
-  type        = bool
-  default     = true
-}
 
-variable "sku_tier" {
-  description = "(Optional) The SKU tier for the AKS cluster. Standard is recommended for production Haven clusters."
+# ==============================================================================
+# 6. ADD-ONS & INTEGRATIONS — ACR, Storage, Autoscaler & Image Cleaner
+# ==============================================================================
+
+variable "container_registry_id" {
+  description = <<-EOT
+    (Optional) The resource ID of the Azure Container Registry to attach to the AKS cluster.
+    
+    When provided, the AKS cluster's kubelet managed identity will be granted AcrPull role permissions,
+    enabling nodes to pull container images from the specified ACR without additional authentication.
+    
+    Benefits:
+    - Seamless image pulls from private ACR
+    - No need for image pull secrets
+    - Automatic authentication using managed identity
+    - Simplified container deployment workflow
+    
+    Example:
+    ```
+    container_registry_id = azurerm_container_registry.acr.id
+    ```
+    
+    For more information: https://learn.microsoft.com/azure/aks/cluster-container-registry-integration
+  EOT
   type        = string
-  default     = "Standard"
-  validation {
-    condition     = contains(["Free", "Standard", "Premium"], var.sku_tier)
-    error_message = "SKU tier must be one of: Free, Standard, Premium."
-  }
+  default     = null
 }
 
 variable "storage_profile" {
@@ -496,15 +525,6 @@ variable "storage_profile" {
   }
 }
 
-variable "tags" {
-  description = "(Optional) A map of tags to assign to all resources."
-  type        = map(string)
-  default = {
-    deployment_method = "terraform"
-    module_name       = "module-haven-cluster-azure-digilab"
-  }
-}
-
 variable "workload_autoscaler_profile" {
   description = "(Optional) Workload autoscaler profile for the AKS cluster."
   type = object({
@@ -517,10 +537,39 @@ variable "workload_autoscaler_profile" {
   }
 }
 
-variable "workload_identity_enabled" {
-  description = "(Optional) Enable workload identity for the AKS cluster."
+variable "image_cleaner_enabled" {
+  description = "(Optional) Enable image cleaner to remove unused images from the AKS cluster."
   type        = bool
   default     = true
+}
+
+variable "image_cleaner_interval_hours" {
+  description = "(Optional) Interval in hours for the image cleaner to run."
+  type        = number
+  default     = 48
+}
+
+
+# ==============================================================================
+# 7. OBSERVABILITY — Log Analytics, Audit Logs & Monitoring Alerts
+# ==============================================================================
+
+variable "existing_log_analytics_workspace_id" {
+  description = "(Optional) ID of existing Log Analytics workspace to use for AKS monitoring. If not provided, a new workspace will be created."
+  type        = string
+  default     = null
+}
+
+variable "enable_audit_logs" {
+  description = "(Optional) Enable comprehensive audit logging for cluster activity monitoring, security compliance, and forensic analysis. Captures API server, authentication, and control plane events. Default: enabled for production compliance."
+  type        = bool
+  default     = true
+}
+
+variable "aks_audit_categories" {
+  description = "(Optional) List of audit categories to enable for the AKS cluster. This is recommended for security compliance."
+  type        = list(string)
+  default     = ["kube-apiserver", "kube-audit", "kube-audit-admin", "kube-controller-manager", "kube-scheduler", "cluster-autoscaler", "guard", "csi-azuredisk-controller", "csi-azurefile-controller", "csi-snapshot-controller"]
 }
 
 variable "monitoring_alerts" {

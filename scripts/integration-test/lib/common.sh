@@ -1,163 +1,127 @@
 #!/bin/bash
+# Integration test — shared config, logging, and JUnit helpers.
+# Source this file; do not execute it directly.
 
-# Haven AKS Integration Test - Common Functions Library
-# Shared utilities and configuration for integration tests
-
-# Common configuration
 export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 export EXAMPLES_DIR="${PROJECT_ROOT}/examples"
 export TEST_RESULTS_DIR="${SCRIPT_DIR}/test-results"
 export REPORT_FILE="${TEST_RESULTS_DIR}/integration-test-report.xml"
 export LOG_FILE="${TEST_RESULTS_DIR}/integration-test.log"
-
-# Test metrics (shared across scripts)
-export TEST_START_TIME=""
-export TEST_END_TIME=""
-export TESTS_TOTAL=0
-export TESTS_PASSED=0
-export TESTS_FAILED=0
-export FAILED_TESTS=()
 export ALL_EXAMPLES=("minimal" "existing-infrastructure")
 
-# Configuration from environment
+# Runtime flags (override via env)
 export SKIP_DESTROY="${SKIP_DESTROY:-false}"
 export DRY_RUN="${DRY_RUN:-false}"
 export CI_MODE="${CI_MODE:-false}"
 
-# Colors for output (disabled in CI mode)
-if [[ "$CI_MODE" == "true" ]]; then
-    export RED=''
-    export GREEN=''
-    export YELLOW=''
-    export BLUE=''
-    export NC=''
+# Counters
+export TESTS_TOTAL=0 TESTS_PASSED=0 TESTS_FAILED=0
+
+# Colors (suppressed in CI mode)
+if [[ "$CI_MODE" != "true" ]]; then
+  export RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m' BLUE='\033[0;34m' NC='\033[0m'
 else
-    export RED='\033[0;31m'
-    export GREEN='\033[0;32m'
-    export YELLOW='\033[1;33m'
-    export BLUE='\033[0;34m'
-    export NC='\033[0m' # No Color
+  export RED='' GREEN='' YELLOW='' BLUE='' NC=''
 fi
 
-# Initialize logging
-init_logging() {
-    mkdir -p "$TEST_RESULTS_DIR"
-
-    # Clear previous results
-    > "$LOG_FILE"
-    > "$REPORT_FILE"
-    > "${TEST_RESULTS_DIR}/failed_tests.txt"
-
-    # Initialize test counters
-    export TESTS_TOTAL=0
-    export TESTS_PASSED=0
-    export TESTS_FAILED=0
-
-    log "INFO" "=== Haven AKS Integration Test Suite ==="
-    log "INFO" "Example: ${EXAMPLE_NAME:-unknown}"
-    log "INFO" "Dry Run: $DRY_RUN"
-    log "INFO" "Skip Destroy: $SKIP_DESTROY"
-    log "INFO" "CI Mode: $CI_MODE"
-    log "INFO" "Results Directory: $TEST_RESULTS_DIR"
-    log "INFO" "========================================"
-}
-
-# Logging function
 log() {
-    local level="$1"
-    shift
-    local message="$*"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-
-    echo "[$timestamp] [$level] $message" | tee -a "$LOG_FILE"
-
-    case "$level" in
-        "ERROR")   echo -e "${RED}[ERROR]${NC} $message" ;;
-        "SUCCESS") echo -e "${GREEN}[SUCCESS]${NC} $message" ;;
-        "WARNING") echo -e "${YELLOW}[WARNING]${NC} $message" ;;
-        "INFO")    echo -e "${BLUE}[INFO]${NC} $message" ;;
-    esac
+  local level="$1"; shift
+  local ts; ts=$(date '+%Y-%m-%d %H:%M:%S')
+  echo "[$ts] [$level] $*" | tee -a "$LOG_FILE"
+  case "$level" in
+    ERROR)   echo -e "${RED}[ERROR]${NC} $*" ;;
+    SUCCESS) echo -e "${GREEN}[SUCCESS]${NC} $*" ;;
+    WARNING) echo -e "${YELLOW}[WARNING]${NC} $*" ;;
+    INFO)    echo -e "${BLUE}[INFO]${NC} $*" ;;
+  esac
 }
 
-# Test execution wrapper
-run_test() {
-    local test_name="$1"
-    local test_script="$2"
-    shift 2
-    local test_args="$@"
-
-    TESTS_TOTAL=$((TESTS_TOTAL + 1))
-    export TESTS_TOTAL
-
-    log "INFO" "Running test: $test_name"
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log "INFO" "DRY RUN: Would execute $test_script $test_args"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        export TESTS_PASSED
-        write_test_result "$test_name" "passed" "0"
-        return 0
-    fi
-
-    local start_time=$(date +%s)
-
-    if "$test_script" "$test_args"; then
-        local end_time=$(date +%s)
-        local duration=$((end_time - start_time))
-        log "SUCCESS" "Test passed: $test_name (${duration}s)"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        export TESTS_PASSED
-        write_test_result "$test_name" "passed" "$duration"
-        return 0
-    else
-        local end_time=$(date +%s)
-        local duration=$((end_time - start_time))
-        log "ERROR" "Test failed: $test_name (${duration}s)"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        export TESTS_FAILED
-        echo "$test_name" >> "${TEST_RESULTS_DIR}/failed_tests.txt"
-        write_test_result "$test_name" "failed" "$duration"
-        return 1
-    fi
+# Load .env when running the existing-infrastructure example.
+# Call with the directory that contains .env (defaults to current dir).
+load_env() {
+  local dir="${1:-.}"
+  if [[ "$EXAMPLE_NAME" == "existing-infrastructure" && -f "$dir/.env" ]]; then
+    log "INFO" "Loading $dir/.env"
+    set -a; source "$dir/.env"; set +a
+  fi
 }
 
-# Write individual test result to JUnit XML
-write_test_result() {
-    local test_name="$1"
-    local status="$2"
-    local duration="$3"
+# Execute one named test step; honours DRY_RUN.
+# Usage: run_step "Label" <function_or_command> [args…]
+run_step() {
+  local name="$1"; shift
+  TESTS_TOTAL=$((TESTS_TOTAL + 1))
+  log "INFO" "▶ $name"
 
-    local test_case=""
-    if [[ "$status" == "passed" ]]; then
-        test_case="    <testcase name=\"$test_name\" time=\"$duration\"/>"
-    else
-        test_case="    <testcase name=\"$test_name\" time=\"$duration\">
-      <failure message=\"Test failed: $test_name\"/>
-    </testcase>"
-    fi
+  if [[ "$DRY_RUN" == "true" ]]; then
+    log "INFO" "DRY_RUN: skipping $name"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+    _xml_case "$name" 0
+    return 0
+  fi
 
-    echo "$test_case" >> "${TEST_RESULTS_DIR}/temp_results.xml"
+  local t0; t0=$(date +%s)
+  if "$@"; then
+    local dur=$(( $(date +%s) - t0 ))
+    log "SUCCESS" "✓ $name (${dur}s)"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+    _xml_case "$name" "$dur"
+    return 0
+  else
+    local dur=$(( $(date +%s) - t0 ))
+    log "ERROR" "✗ $name (${dur}s)"
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+    _xml_case "$name" "$dur" "failed"
+    echo "$name" >> "${TEST_RESULTS_DIR}/failed_tests.txt"
+    return 1
+  fi
 }
 
-# Cleanup function
-cleanup() {
-    local exit_code=$?
-
-    log "INFO" "Performing cleanup..."
-
-    # Remove temporary files
-    rm -f "${TEST_RESULTS_DIR}/temp_results.xml"
-
-    # Remove terraform plan files
-    find "${SCRIPT_DIR}" -name "tfplan" -delete 2>/dev/null || true
-
-    exit $exit_code
+_xml_case() {
+  local name="$1" dur="$2" status="${3:-}"
+  if [[ -z "$status" ]]; then
+    echo "    <testcase name=\"$name\" time=\"$dur\"/>" >> "${TEST_RESULTS_DIR}/tmp.xml"
+  else
+    printf '    <testcase name="%s" time="%s">\n      <failure message="Test failed: %s"/>\n    </testcase>\n' \
+      "$name" "$dur" "$name" >> "${TEST_RESULTS_DIR}/tmp.xml"
+  fi
 }
 
-# Load this library in other scripts
-export -f log
-export -f run_test
-export -f write_test_result
-export -f cleanup
-export -f init_logging
+init_results() {
+  mkdir -p "$TEST_RESULTS_DIR"
+  : > "$LOG_FILE" > "$REPORT_FILE" > "${TEST_RESULTS_DIR}/failed_tests.txt" > "${TEST_RESULTS_DIR}/tmp.xml"
+  TESTS_TOTAL=0; TESTS_PASSED=0; TESTS_FAILED=0
+  export TEST_START_TIME; TEST_START_TIME=$(date +%s)
+  log "INFO" "=== Haven AKS Integration Test Suite ==="
+  log "INFO" "Example: ${EXAMPLE_NAME:-all}  DRY_RUN=$DRY_RUN  SKIP_DESTROY=$SKIP_DESTROY  CI_MODE=$CI_MODE"
+}
+
+write_report() {
+  local suite="${1:-unknown}"
+  local total_time=$(( $(date +%s) - TEST_START_TIME ))
+
+  cat > "$REPORT_FILE" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Haven AKS Integration Tests" tests="$TESTS_TOTAL" failures="$TESTS_FAILED" time="$total_time">
+  <testsuite name="$suite" tests="$TESTS_TOTAL" failures="$TESTS_FAILED" time="$total_time">
+$(cat "${TEST_RESULTS_DIR}/tmp.xml" 2>/dev/null)
+  </testsuite>
+</testsuites>
+EOF
+
+  {
+    echo "Haven AKS Integration Test Summary"
+    echo "=================================="
+    echo "Suite:    $suite"
+    echo "Duration: ${total_time}s"
+    echo "Total:    $TESTS_TOTAL  Passed: $TESTS_PASSED  Failed: $TESTS_FAILED"
+    [[ $TESTS_FAILED -gt 0 ]] && { echo ""; echo "Failed tests:"; cat "${TEST_RESULTS_DIR}/failed_tests.txt"; }
+    echo ""
+    echo "Status: $( [[ $TESTS_FAILED -eq 0 ]] && echo SUCCESS || echo FAILURE )"
+  } | tee "${TEST_RESULTS_DIR}/summary.txt"
+
+  rm -f "${TEST_RESULTS_DIR}/tmp.xml"
+}
+
+export -f log load_env run_step _xml_case init_results write_report
