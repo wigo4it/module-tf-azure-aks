@@ -67,9 +67,13 @@ resource "azurerm_kubernetes_cluster" "default" {
     max_pods                = var.aks_default_node_pool.max_pods
     min_count               = var.aks_default_node_pool.cluster_auto_scaling_min_count
     name                    = var.aks_default_node_pool.name
-    node_count              = var.aks_default_node_pool.node_count
-    node_labels             = var.aks_default_node_pool.labels
-    node_public_ip_enabled  = var.aks_default_node_pool.node_public_ip_enabled
+    node_count = (
+      var.aks_default_node_pool.cluster_auto_scaling_enabled &&
+      var.aks_default_node_pool.cluster_auto_scaling_min_count != null &&
+      var.aks_default_node_pool.node_count < var.aks_default_node_pool.cluster_auto_scaling_min_count
+    ) ? var.aks_default_node_pool.cluster_auto_scaling_min_count : var.aks_default_node_pool.node_count
+    node_labels            = var.aks_default_node_pool.labels
+    node_public_ip_enabled = var.aks_default_node_pool.node_public_ip_enabled
     # WAF - Reliability: alleen kritieke addons op system node pool — workloads gaan naar user pools
     only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
     # Pinnen op kubernetes_version zodat node pool en control plane altijd synchroon lopen
