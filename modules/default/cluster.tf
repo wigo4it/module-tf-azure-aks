@@ -24,8 +24,11 @@ resource "azurerm_role_assignment" "aks_identity_network_contributor" {
 }
 
 resource "azurerm_kubernetes_cluster" "default" {
-  azure_policy_enabled              = var.azure_policy_enabled
-  automatic_upgrade_channel         = var.automatic_upgrade_channel
+  azure_policy_enabled = var.azure_policy_enabled
+  # WAF - Operational Excellence: null bij 'none' zodat AKS het attribuut niet persisteert
+  automatic_upgrade_channel = var.automatic_upgrade_channel == "none" ? null : var.automatic_upgrade_channel
+  # WAF - Operational Excellence: NodeImage channel hernieuwt node OS images los van Kubernetes upgrades
+  node_os_upgrade_channel           = var.node_os_upgrade_channel
   disk_encryption_set_id            = var.disk_encryption_set_id
   dns_prefix                        = coalesce(var.dns_prefix, var.name)
   image_cleaner_enabled             = var.image_cleaner_enabled
@@ -34,7 +37,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   local_account_disabled            = var.local_account_disabled
   location                          = var.location
   name                              = var.name
-  node_resource_group               = "${var.resource_group_name}-nodes"
+  node_resource_group               = coalesce(var.node_resource_group, "${var.resource_group_name}-nodes")
   oidc_issuer_enabled               = var.oidc_issuer_enabled
   private_cluster_enabled           = var.private_cluster_enabled
   private_dns_zone_id               = var.private_dns_zone_id
@@ -45,36 +48,43 @@ resource "azurerm_kubernetes_cluster" "default" {
   workload_identity_enabled         = var.workload_identity_enabled
 
 
-  # Azure Monitor for container metrics (security compliance)
-  monitor_metrics {
-    annotations_allowed = null
-    labels_allowed      = null
+  # WAF - Operational Excellence: Azure Monitor metrics — schakel in via var.prometheus_enabled
+  dynamic "monitor_metrics" {
+    for_each = var.prometheus_enabled ? ["enabled"] : []
+    content {
+      annotations_allowed = null
+      labels_allowed      = null
+    }
   }
 
   default_node_pool {
-    auto_scaling_enabled         = var.aks_default_node_pool.cluster_auto_scaling_enabled
-    max_count                    = var.aks_default_node_pool.cluster_auto_scaling_max_count
-    max_pods                     = var.aks_default_node_pool.max_pods
-    min_count                    = var.aks_default_node_pool.cluster_auto_scaling_min_count
-    name                         = var.aks_default_node_pool.name
-    node_count                   = var.aks_default_node_pool.node_count
-    node_labels                  = var.aks_default_node_pool.labels
-    node_public_ip_enabled       = var.aks_default_node_pool.node_public_ip_enabled
+    tags = var.tags
+
+    auto_scaling_enabled = var.aks_default_node_pool.cluster_auto_scaling_enabled
+    # WAF - Security: versleuteling op host-niveau voor alle node-data
+    host_encryption_enabled = var.aks_default_node_pool.host_encryption_enabled
+    max_count               = var.aks_default_node_pool.cluster_auto_scaling_max_count
+    max_pods                = var.aks_default_node_pool.max_pods
+    min_count               = var.aks_default_node_pool.cluster_auto_scaling_min_count
+    name                    = var.aks_default_node_pool.name
+    node_count              = var.aks_default_node_pool.node_count
+    node_labels             = var.aks_default_node_pool.labels
+    node_public_ip_enabled  = var.aks_default_node_pool.node_public_ip_enabled
+    # WAF - Reliability: alleen kritieke addons op system node pool — workloads gaan naar user pools
     only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
-    os_disk_size_gb              = var.aks_default_node_pool.os_disk_size_gb
-    os_disk_type                 = var.aks_default_node_pool.os_disk_type
-    temporary_name_for_rotation  = "${var.aks_default_node_pool.name}tmp"
-    vm_size                      = var.aks_default_node_pool.vm_size
-    vnet_subnet_id               = local.subnet_id
+    # Pinnen op kubernetes_version zodat node pool en control plane altijd synchroon lopen
+    orchestrator_version        = var.kubernetes_version
+    os_disk_size_gb             = var.aks_default_node_pool.os_disk_size_gb
+    os_disk_type                = var.aks_default_node_pool.os_disk_type
+    os_sku                      = var.aks_default_node_pool.os_sku
+    temporary_name_for_rotation = "${var.aks_default_node_pool.name}tmp"
+    vm_size                     = var.aks_default_node_pool.vm_size
+    vnet_subnet_id              = local.subnet_id
+    zones                       = var.aks_default_node_pool.zones
 
-    zones = var.aks_default_node_pool.zones
-
-    dynamic "upgrade_settings" {
-      for_each = var.aks_default_node_pool.upgrade_settings != null ? ["enabled"] : []
-      content {
-        drain_timeout_in_minutes = var.aks_default_node_pool.upgrade_settings.drain_timeout_in_minutes
-        max_surge                = var.aks_default_node_pool.upgrade_settings.max_surge
-      }
+    upgrade_settings {
+      drain_timeout_in_minutes = var.aks_default_node_pool.upgrade_settings.drain_timeout_in_minutes
+      max_surge                = var.aks_default_node_pool.upgrade_settings.max_surge
     }
   }
   dynamic "azure_active_directory_role_based_access_control" {
@@ -90,18 +100,33 @@ resource "azurerm_kubernetes_cluster" "default" {
     ip_versions       = var.network_profile.ip_versions
     load_balancer_sku = var.network_profile.load_balancer_sku
     network_plugin    = var.network_profile.network_plugin
-    network_policy    = var.network_profile.network_policy
+    # Bij BYO CNI (network_plugin = "none") zijn network_plugin_mode en network_policy niet van toepassing.
+    network_plugin_mode = var.network_profile.network_plugin == "none" ? null : var.network_profile.network_plugin_mode
+    network_policy      = var.network_profile.network_plugin == "none" ? null : var.network_profile.network_policy
+    outbound_type       = var.network_profile.outbound_type
+    dns_service_ip      = var.network_profile.dns_service_ip
+    service_cidr        = var.network_profile.service_cidr
+    # BYO CNI (network_plugin = "none"): pod_cidr niet doorgeven — Cilium beheert dit via ClusterPool IPAM.
+    pod_cidr = var.network_profile.network_plugin == "none" ? null : var.network_profile.pod_cidr
 
-    load_balancer_profile {
-      outbound_ip_address_ids = concat(
-        azurerm_public_ip.egress_ipv4[*].id,
-      )
+    # load_balancer_profile alleen van toepassing bij outbound_type loadBalancer
+    dynamic "load_balancer_profile" {
+      for_each = var.network_profile.outbound_type == "loadBalancer" ? ["enabled"] : []
+      content {
+        outbound_ip_address_ids = concat(azurerm_public_ip.egress_ipv4[*].id)
+      }
     }
   }
 
   identity {
     identity_ids = var.private_cluster_enabled ? [azurerm_user_assigned_identity.aks_identity[0].id] : []
     type         = var.private_cluster_enabled ? "UserAssigned" : "SystemAssigned"
+  }
+
+  # WAF - Reliability: cluster autoscaler gedrag configureerbaar
+  auto_scaler_profile {
+    expander                      = var.auto_scaler_profile_expander
+    skip_nodes_with_local_storage = var.skip_nodes_with_local_storage
   }
 
   workload_autoscaler_profile {
@@ -123,14 +148,18 @@ resource "azurerm_kubernetes_cluster" "default" {
     snapshot_controller_enabled = var.storage_profile.snapshot_controller_enabled
   }
 
-  # Enable OMS Agent for Log Analytics monitoring (security compliance)
-  oms_agent {
-    log_analytics_workspace_id      = local.log_analytics_workspace_id
-    msi_auth_for_monitoring_enabled = true
+  # WAF - Operational Excellence: OMS agent voor Log Analytics — MSI auth (geen client secret)
+  dynamic "oms_agent" {
+    for_each = local.log_analytics_workspace_id != null ? [1] : []
+    content {
+      log_analytics_workspace_id      = local.log_analytics_workspace_id
+      msi_auth_for_monitoring_enabled = true
+    }
   }
 
+  # WAF - Security: Microsoft Defender — alleen inschakelen als LAW beschikbaar is
   dynamic "microsoft_defender" {
-    for_each = var.microsoft_defender_enabled ? ["enabled"] : []
+    for_each = var.microsoft_defender_enabled && local.log_analytics_workspace_id != null ? ["enabled"] : []
     content {
       log_analytics_workspace_id = local.log_analytics_workspace_id
     }
@@ -145,11 +174,15 @@ resource "azurerm_kubernetes_cluster" "default" {
     }
   }
 
+  timeouts {
+    # Lager dan Azure DevOps pipeline timeout om state lock te voorkomen bij pipeline timeout
+    update = var.timeouts_update
+  }
+
   lifecycle {
     ignore_changes = [
+      # node_count wordt beheerd door de cluster autoscaler
       default_node_pool[0].node_count,
-      default_node_pool[0].upgrade_settings,
-      kubernetes_version
     ]
   }
 }

@@ -3,6 +3,33 @@ output "cluster_name" {
   value       = azurerm_kubernetes_cluster.default.name
 }
 
+# Alias voor consistentie met akscluster module interface
+output "resource_id" {
+  description = "The resource ID of the AKS cluster."
+  value       = azurerm_kubernetes_cluster.default.id
+}
+
+output "node_resource_group_name" {
+  description = "The node resource group name of the AKS cluster."
+  value       = azurerm_kubernetes_cluster.default.node_resource_group
+}
+
+output "kubernetes_cluster_resourcegroup_name" {
+  description = "The resource group name of the AKS cluster."
+  value       = azurerm_kubernetes_cluster.default.resource_group_name
+}
+
+output "aks_system_managed_identity" {
+  description = "The principal ID of the AKS cluster managed identity."
+  value       = azurerm_kubernetes_cluster.default.identity[0].principal_id
+}
+
+output "kube_config" {
+  description = "The kube config of the AKS cluster."
+  value       = azurerm_kubernetes_cluster.default.kube_config[0]
+  sensitive   = true
+}
+
 output "cluster_oidc_issuer_url" {
   value = azurerm_kubernetes_cluster.default.oidc_issuer_url
 }

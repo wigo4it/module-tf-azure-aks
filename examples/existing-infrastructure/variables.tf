@@ -89,7 +89,8 @@ variable "private_cluster_enabled" {
 variable "sku_tier" {
   description = "SKU tier for the AKS cluster (Free, Standard, Premium)"
   type        = string
-  default     = "Free"
+  # WAF - Reliability: Standard SKU met Uptime SLA voor productie
+  default = "Standard"
   validation {
     condition     = contains(["Free", "Standard", "Premium"], var.sku_tier)
     error_message = "SKU tier must be one of: Free, Standard, Premium."
@@ -105,6 +106,20 @@ variable "enable_keda" {
 
 variable "enable_vpa" {
   description = "Enable VPA (Vertical Pod Autoscaler)"
+  type        = bool
+  default     = false
+}
+
+# WAF - Operational Excellence: bestaande LAW hergebruiken
+variable "existing_log_analytics_workspace_id" {
+  description = "(Optional) ID of an existing Log Analytics workspace. If null, a new one is created by the module."
+  type        = string
+  default     = null
+}
+
+# WAF - Operational Excellence: Prometheus metrics collectie
+variable "prometheus_enabled" {
+  description = "Enable Azure Monitor managed Prometheus metrics collection."
   type        = bool
   default     = false
 }

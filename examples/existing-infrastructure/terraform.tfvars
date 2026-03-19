@@ -9,8 +9,12 @@ enable_auto_scaling          = true
 min_node_count               = 1
 max_node_count               = 3
 
-# Test configuration
+# WAF - Reliability: Standard SKU met Uptime SLA
 private_cluster_enabled = false
-sku_tier                = "Free"
+sku_tier                = "Standard"
 enable_keda             = false
 enable_vpa              = false
+prometheus_enabled      = false
+
+# Geef een bestaande LAW op om kosten en duplicatie te vermijden
+# existing_log_analytics_workspace_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.OperationalInsights/workspaces/law-..."
