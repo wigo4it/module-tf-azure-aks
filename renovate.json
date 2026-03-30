@@ -1,10 +1,7 @@
 {
-  "extends": ["config:recommended"],
-  "enabledManagers": ["terraform"],
-  "packageRules": [
-    {
-      "matchDatasources": ["terraform-provider"],
-      "registryUrls": ["https://registry.opentofu.org"]
-    }
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>wigo4it/renovate-config",
+    "github>wigo4it/renovate-config:terraform"
   ]
 }

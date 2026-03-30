@@ -158,9 +158,10 @@ resource "azurerm_kubernetes_cluster" "default" {
 resource "azurerm_monitor_diagnostic_setting" "aks_audit_logs" {
   count = var.enable_audit_logs ? 1 : 0
 
-  name                       = "${var.name}-audit-logs"
-  target_resource_id         = azurerm_kubernetes_cluster.default.id
-  log_analytics_workspace_id = local.log_analytics_workspace_id
+  name                           = "${var.name}-audit-logs"
+  target_resource_id             = azurerm_kubernetes_cluster.default.id
+  log_analytics_workspace_id     = local.log_analytics_workspace_id
+  log_analytics_destination_type = var.log_analytics_destination_type
 
   dynamic "enabled_log" {
     for_each = var.aks_audit_categories

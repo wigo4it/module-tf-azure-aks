@@ -193,6 +193,12 @@ variable "existing_log_analytics_workspace_id" {
   default     = null
 }
 
+variable "log_analytics_destination_type" {
+  description = "(Optional) Possible values are AzureDiagnostics and Dedicated. When set to Dedicated, logs sent to a Log Analytics workspace will go into resource specific tables, instead of the legacy AzureDiagnostics table."
+  type        = string
+  default     = "Dedicated"
+}
+
 variable "image_cleaner_enabled" {
   description = "(Optional) Enable image cleaner to remove unused images from the AKS cluster."
   type        = bool
