@@ -10,10 +10,19 @@ repos:
       # Validate Terraform configurations
       - id: terraform_validate
 
-      # Generate and update documentation
+      # Generate and update documentation for the root module
       - id: terraform_docs
+        files: ^modules/
         args:
           - --hook-config=--path-to-file=../../README.md
+          - --hook-config=--add-to-existing-file=true
+          - --hook-config=--create-file-if-not-exist=true
+
+      # Generate and update documentation for each example (local README.md)
+      - id: terraform_docs
+        files: ^examples/
+        args:
+          - --hook-config=--path-to-file=README.md
           - --hook-config=--add-to-existing-file=true
           - --hook-config=--create-file-if-not-exist=true
 
