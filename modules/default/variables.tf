@@ -235,18 +235,53 @@ variable "local_account_disabled" {
 }
 
 variable "network_profile" {
-  description = "(Optional) Network configuration for the AKS cluster. Uses Haven-compliant defaults if not specified."
+  description = "(Optional) Network configuration for the AKS cluster. To use Azure CNI powered by Cilium, set network_data_plane to 'cilium', network_policy to 'cilium', and either network_plugin_mode to 'overlay' or configure pod_subnet_id on the default node pool."
   type = object({
-    network_plugin    = optional(string, "azure")
-    network_policy    = optional(string, "calico")
-    load_balancer_sku = optional(string, "standard")
-    ip_versions       = optional(list(string), ["IPv4"])
+    network_plugin      = optional(string, "azure")
+    network_policy      = optional(string, "calico")
+    network_data_plane  = optional(string, null)
+    network_plugin_mode = optional(string, null)
+    pod_cidr            = optional(string, null)
+    load_balancer_sku   = optional(string, "standard")
+    ip_versions         = optional(list(string), ["IPv4"])
+    advanced_networking = optional(object({
+      observability_enabled = optional(bool, false)
+      security_enabled      = optional(bool, false)
+    }), null)
   })
   default = {
     network_plugin    = "azure"
     network_policy    = "calico"
     load_balancer_sku = "standard"
     ip_versions       = ["IPv4"]
+  }
+  validation {
+    condition = (
+      var.network_profile.network_data_plane != "cilium" ||
+      var.network_profile.network_plugin == "azure"
+    )
+    error_message = "When 'network_data_plane' is 'cilium', 'network_plugin' must be 'azure'."
+  }
+  validation {
+    condition = (
+      var.network_profile.network_policy != "cilium" ||
+      var.network_profile.network_data_plane == "cilium"
+    )
+    error_message = "When 'network_policy' is 'cilium', 'network_data_plane' must also be set to 'cilium'."
+  }
+  validation {
+    condition = (
+      var.network_profile.network_plugin_mode == null ||
+      var.network_profile.network_plugin_mode == "overlay"
+    )
+    error_message = "The only valid value for 'network_plugin_mode' is 'overlay'."
+  }
+  validation {
+    condition = (
+      var.network_profile.advanced_networking == null ||
+      (var.network_profile.network_plugin == "azure" && var.network_profile.network_data_plane == "cilium")
+    )
+    error_message = "'advanced_networking' can only be configured when 'network_plugin' is 'azure' and 'network_data_plane' is 'cilium'."
   }
 }
 

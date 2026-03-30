@@ -87,15 +87,26 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   network_profile {
-    ip_versions       = var.network_profile.ip_versions
-    load_balancer_sku = var.network_profile.load_balancer_sku
-    network_plugin    = var.network_profile.network_plugin
-    network_policy    = var.network_profile.network_policy
+    ip_versions         = var.network_profile.ip_versions
+    load_balancer_sku   = var.network_profile.load_balancer_sku
+    network_plugin      = var.network_profile.network_plugin
+    network_policy      = var.network_profile.network_policy
+    network_data_plane  = var.network_profile.network_data_plane
+    network_plugin_mode = var.network_profile.network_plugin_mode
+    pod_cidr            = var.network_profile.pod_cidr
 
     load_balancer_profile {
       outbound_ip_address_ids = concat(
         azurerm_public_ip.egress_ipv4[*].id,
       )
+    }
+
+    dynamic "advanced_networking" {
+      for_each = var.network_profile.advanced_networking != null ? ["enabled"] : []
+      content {
+        observability_enabled = var.network_profile.advanced_networking.observability_enabled
+        security_enabled      = var.network_profile.advanced_networking.security_enabled
+      }
     }
   }
 
