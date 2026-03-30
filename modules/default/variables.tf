@@ -283,6 +283,13 @@ variable "network_profile" {
     )
     error_message = "'advanced_networking' can only be configured when 'network_plugin' is 'azure' and 'network_data_plane' is 'cilium'."
   }
+  validation {
+    condition = (
+      var.network_profile.pod_cidr == null ||
+      var.network_profile.network_plugin_mode == "overlay"
+    )
+    error_message = "'pod_cidr' can only be set when 'network_plugin_mode' is 'overlay'. Without overlay mode, pod IPs are allocated from the node subnet."
+  }
 }
 
 variable "oidc_issuer_enabled" {
