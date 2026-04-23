@@ -8,13 +8,8 @@ variable "aks_default_node_pool" {
     vm_size         = string
     node_count      = optional(number, 1)
     zones           = optional(list(string), ["1", "2", "3"])
-    mode            = optional(string, "System")
     max_pods        = optional(number, 120)
     labels          = optional(map(string), {})
-    spot_node       = optional(bool, false)
-    spot_max_price  = optional(number, null)
-    eviction_policy = optional(string, null)
-    node_os         = optional(string, null)
     os_disk_size_gb = optional(number, null)
     os_disk_type    = optional(string, "Ephemeral")
     # WAF - Security: AzureLinux (Mariner) — minimale attack surface, CIS-hardened
@@ -98,7 +93,6 @@ variable "aks_additional_node_pools" {
     spot_node                      = optional(bool, false)
     spot_max_price                 = optional(number, null)
     eviction_policy                = optional(string, null)
-    node_os                        = optional(string, null)
     os_disk_size_gb                = optional(number, null)
     os_disk_type                   = optional(string, null)
     cluster_auto_scaling_enabled   = optional(bool, false)
