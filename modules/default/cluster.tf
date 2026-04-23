@@ -1,5 +1,5 @@
 resource "azurerm_user_assigned_identity" "aks_identity" {
-  count = 1 # var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+  count = 1
 
   name                = "id-${var.name}"
   location            = var.location
@@ -7,8 +7,15 @@ resource "azurerm_user_assigned_identity" "aks_identity" {
   tags                = var.tags
 }
 
+locals {
+  # DRY: BYO CNI (network_plugin = "none") disables plugin-managed network settings.
+  is_byo_cni = var.network_profile.network_plugin == "none"
+  # DRY: private cluster with DNS zone — governs role assignments and identity usage.
+  private_cluster_with_dns = var.private_cluster_enabled && var.private_dns_zone_id != null
+}
+
 resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
-  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+  count = local.private_cluster_with_dns ? 1 : 0
 
   scope                = var.private_dns_zone_id
   role_definition_name = "Private DNS Zone Contributor"
@@ -16,7 +23,7 @@ resource "azurerm_role_assignment" "aks_identity_private_dns_zone_contributor" {
 }
 
 resource "azurerm_role_assignment" "aks_identity_network_contributor" {
-  count = var.private_cluster_enabled && var.private_dns_zone_id != null ? 1 : 0
+  count = local.private_cluster_with_dns ? 1 : 0
 
   scope                = var.virtual_network.id
   role_definition_name = "Network Contributor"
@@ -43,9 +50,11 @@ resource "azurerm_kubernetes_cluster" "default" {
   private_dns_zone_id               = var.private_dns_zone_id
   resource_group_name               = var.resource_group_name
   role_based_access_control_enabled = var.role_based_access_control_enabled
-  sku_tier                          = var.sku_tier
-  tags                              = var.tags
-  workload_identity_enabled         = var.workload_identity_enabled
+  # WAF - Security: schakel run-command uit om lateral movement via de API server te voorkomen.
+  run_command_enabled       = false
+  sku_tier                  = var.sku_tier
+  tags                      = var.tags
+  workload_identity_enabled = var.workload_identity_enabled
 
 
   # WAF - Operational Excellence: Azure Monitor metrics — schakel in via var.prometheus_enabled
@@ -104,20 +113,30 @@ resource "azurerm_kubernetes_cluster" "default" {
     ip_versions       = var.network_profile.ip_versions
     load_balancer_sku = var.network_profile.load_balancer_sku
     network_plugin    = var.network_profile.network_plugin
-    # Bij BYO CNI (network_plugin = "none") zijn network_plugin_mode en network_policy niet van toepassing.
-    network_plugin_mode = var.network_profile.network_plugin == "none" ? null : var.network_profile.network_plugin_mode
-    network_policy      = var.network_profile.network_plugin == "none" ? null : var.network_profile.network_policy
-    outbound_type       = var.network_profile.outbound_type
-    dns_service_ip      = var.network_profile.dns_service_ip
-    service_cidr        = var.network_profile.service_cidr
+    # Bij BYO CNI (network_plugin = "none") zijn network_plugin_mode, network_policy en network_data_plane niet van toepassing.
+    network_plugin_mode = local.is_byo_cni ? null : var.network_profile.network_plugin_mode
+    # WAF - Security: network_data_plane 'cilium' biedt eBPF-gebaseerde network policy enforcement op kernel-niveau.
+    network_data_plane = local.is_byo_cni ? null : var.network_profile.network_data_plane
+    network_policy     = local.is_byo_cni ? null : var.network_profile.network_policy
+    outbound_type      = var.network_profile.outbound_type
+    dns_service_ip     = var.network_profile.dns_service_ip
+    service_cidr       = var.network_profile.service_cidr
     # BYO CNI (network_plugin = "none"): pod_cidr niet doorgeven — Cilium beheert dit via ClusterPool IPAM.
-    pod_cidr = var.network_profile.network_plugin == "none" ? null : var.network_profile.pod_cidr
+    pod_cidr = local.is_byo_cni ? null : var.network_profile.pod_cidr
 
     # load_balancer_profile alleen van toepassing bij outbound_type loadBalancer
     dynamic "load_balancer_profile" {
       for_each = var.network_profile.outbound_type == "loadBalancer" ? ["enabled"] : []
       content {
-        outbound_ip_address_ids = concat(azurerm_public_ip.egress_ipv4[*].id)
+        outbound_ip_address_ids = azurerm_public_ip.egress_ipv4[*].id
+      }
+    }
+
+    dynamic "advanced_networking" {
+      for_each = var.network_profile.advanced_networking != null ? ["enabled"] : []
+      content {
+        observability_enabled = var.network_profile.advanced_networking.observability_enabled
+        security_enabled      = var.network_profile.advanced_networking.security_enabled
       }
     }
   }
@@ -134,8 +153,8 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   workload_autoscaler_profile {
-    keda_enabled                    = var.workload_autoscaler_profile != null ? var.workload_autoscaler_profile.keda_enabled : false
-    vertical_pod_autoscaler_enabled = var.workload_autoscaler_profile != null ? var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled : false
+    keda_enabled                    = try(var.workload_autoscaler_profile.keda_enabled, false)
+    vertical_pod_autoscaler_enabled = try(var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled, false)
   }
 
   dynamic "api_server_access_profile" {
@@ -195,9 +214,10 @@ resource "azurerm_kubernetes_cluster" "default" {
 resource "azurerm_monitor_diagnostic_setting" "aks_audit_logs" {
   count = var.enable_audit_logs ? 1 : 0
 
-  name                       = "${var.name}-audit-logs"
-  target_resource_id         = azurerm_kubernetes_cluster.default.id
-  log_analytics_workspace_id = local.log_analytics_workspace_id
+  name                           = "${var.name}-audit-logs"
+  target_resource_id             = azurerm_kubernetes_cluster.default.id
+  log_analytics_workspace_id     = local.log_analytics_workspace_id
+  log_analytics_destination_type = var.log_analytics_destination_type
 
   dynamic "enabled_log" {
     for_each = var.aks_audit_categories

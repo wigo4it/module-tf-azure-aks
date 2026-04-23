@@ -202,6 +202,12 @@ variable "existing_log_analytics_workspace_id" {
   default     = null
 }
 
+variable "log_analytics_destination_type" {
+  description = "(Optional) Possible values are AzureDiagnostics and Dedicated. When set to Dedicated, logs sent to a Log Analytics workspace will go into resource specific tables, instead of the legacy AzureDiagnostics table."
+  type        = string
+  default     = "Dedicated"
+}
+
 variable "image_cleaner_enabled" {
   description = "(Optional) Enable image cleaner to remove unused images from the AKS cluster."
   type        = bool
@@ -245,6 +251,9 @@ variable "network_profile" {
     # network_plugin_mode: 'overlay' voor Azure CNI Overlay, null voor klassieke Azure CNI of BYO CNI.
     # Wordt automatisch genegeerd bij BYO CNI (network_plugin = "none").
     network_plugin_mode = optional(string, null)
+    # network_data_plane: 'azure' (default) of 'cilium' voor eBPF-gebaseerd dataplane.
+    # WAF - Security: Cilium biedt network policy enforcement op kernel-niveau via eBPF.
+    network_data_plane = optional(string, "azure")
     # network_policy: wordt automatisch null bij BYO CNI (network_plugin = "none").
     network_policy    = optional(string, "calico")
     load_balancer_sku = optional(string, "standard")
@@ -254,10 +263,17 @@ variable "network_profile" {
     service_cidr      = optional(string, null)
     # pod_cidr: verplicht bij Azure CNI Overlay of kubenet. Wordt genegeerd bij BYO CNI.
     pod_cidr = optional(string, null)
+    # advanced_networking: alleen beschikbaar wanneer network_plugin = 'azure' en network_data_plane = 'cilium'.
+    # WAF - Security: schakel observability en security in voor diepgaand netwerk-inzicht.
+    advanced_networking = optional(object({
+      observability_enabled = optional(bool, false)
+      security_enabled      = optional(bool, false)
+    }), null)
   })
   default = {
     network_plugin      = "azure"
     network_plugin_mode = null
+    network_data_plane  = "azure"
     network_policy      = "calico"
     load_balancer_sku   = "standard"
     ip_versions         = ["IPv4"]
@@ -265,6 +281,61 @@ variable "network_profile" {
     dns_service_ip      = null
     service_cidr        = null
     pod_cidr            = null
+    advanced_networking = null
+  }
+  validation {
+    condition = (
+      var.network_profile.network_data_plane != "cilium" ||
+      var.network_profile.network_plugin == "azure"
+    )
+    error_message = "When 'network_data_plane' is 'cilium', 'network_plugin' must be 'azure'."
+  }
+  validation {
+    condition = (
+      var.network_profile.network_policy != "cilium" ||
+      var.network_profile.network_data_plane == "cilium"
+    )
+    error_message = "When 'network_policy' is 'cilium', 'network_data_plane' must also be set to 'cilium'."
+  }
+  validation {
+    condition = (
+      var.network_profile.network_plugin_mode == null ||
+      var.network_profile.network_plugin_mode == "overlay"
+    )
+    error_message = "The only valid value for 'network_plugin_mode' is 'overlay'."
+  }
+  validation {
+    condition = (
+      var.network_profile.advanced_networking == null ||
+      (var.network_profile.network_plugin == "azure" && var.network_profile.network_data_plane == "cilium")
+    )
+    error_message = "'advanced_networking' can only be configured when 'network_plugin' is 'azure' and 'network_data_plane' is 'cilium'."
+  }
+  validation {
+    condition = (
+      var.network_profile.pod_cidr == null ||
+      var.network_profile.network_plugin_mode == "overlay"
+    )
+    error_message = "'pod_cidr' can only be set when 'network_plugin_mode' is 'overlay'. Without overlay mode, pod IPs are allocated from the node subnet."
+  }
+  validation {
+    condition     = contains(["azure", "cilium"], var.network_profile.network_data_plane)
+    error_message = "'network_data_plane' must be either 'azure' or 'cilium'."
+  }
+  validation {
+    condition     = contains(["azure", "kubenet", "none"], var.network_profile.network_plugin)
+    error_message = "'network_plugin' must be one of: 'azure', 'kubenet', 'none'."
+  }
+  validation {
+    condition     = contains(["standard", "basic"], var.network_profile.load_balancer_sku)
+    error_message = "'load_balancer_sku' must be either 'standard' or 'basic'. WAF recommends 'standard'."
+  }
+  validation {
+    condition = contains(
+      ["loadBalancer", "userDefinedRouting", "managedNATGateway", "userAssignedNATGateway"],
+      var.network_profile.outbound_type
+    )
+    error_message = "'outbound_type' must be one of: 'loadBalancer', 'userDefinedRouting', 'managedNATGateway', 'userAssignedNATGateway'."
   }
 }
 
@@ -305,17 +376,12 @@ variable "sku_tier" {
 variable "storage_profile" {
   description = "(Optional) Storage profile configuration for the AKS cluster."
   type = object({
-    blob_driver_enabled         = bool
-    disk_driver_enabled         = bool
-    file_driver_enabled         = bool
-    snapshot_controller_enabled = bool
+    blob_driver_enabled         = optional(bool, false)
+    disk_driver_enabled         = optional(bool, true)
+    file_driver_enabled         = optional(bool, true)
+    snapshot_controller_enabled = optional(bool, true)
   })
-  default = {
-    blob_driver_enabled         = false
-    disk_driver_enabled         = true
-    file_driver_enabled         = true
-    snapshot_controller_enabled = true
-  }
+  default = {}
 }
 
 variable "tags" {
@@ -330,13 +396,10 @@ variable "tags" {
 variable "workload_autoscaler_profile" {
   description = "(Optional) Workload autoscaler profile for the AKS cluster."
   type = object({
-    keda_enabled                    = bool
-    vertical_pod_autoscaler_enabled = bool
+    keda_enabled                    = optional(bool, false)
+    vertical_pod_autoscaler_enabled = optional(bool, false)
   })
-  default = {
-    keda_enabled                    = false
-    vertical_pod_autoscaler_enabled = false
-  }
+  default = null
 }
 
 variable "workload_identity_enabled" {

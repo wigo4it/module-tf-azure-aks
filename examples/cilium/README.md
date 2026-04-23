@@ -1,0 +1,58 @@
+# cilium
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.12 |
+| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 4.35 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.66.0 |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_haven"></a> [haven](#module\_haven) | ../../modules/default | n/a |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [azurerm_log_analytics_workspace.aks_monitoring](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) | resource |
+| [azurerm_resource_group.monitoring](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) | resource |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_additional_node_pools"></a> [additional\_node\_pools](#input\_additional\_node\_pools) | Additional node pools to create | <pre>map(object({<br/>    vm_size                        = string<br/>    node_count                     = optional(number, 1)<br/>    zones                          = optional(list(string), ["1", "2", "3"])<br/>    mode                           = optional(string, "User")<br/>    max_pods                       = optional(number, 120)<br/>    labels                         = optional(map(string), {})<br/>    taints                         = optional(list(string), [])<br/>    spot_node                      = optional(bool, false)<br/>    cluster_auto_scaling_enabled   = optional(bool, false)<br/>    cluster_auto_scaling_min_count = optional(number, null)<br/>    cluster_auto_scaling_max_count = optional(number, null)<br/>    node_public_ip_enabled         = optional(bool, false)<br/>  }))</pre> | n/a | yes |
+| <a name="input_cilium_observability_enabled"></a> [cilium\_observability\_enabled](#input\_cilium\_observability\_enabled) | Enable Cilium advanced network observability (Hubble) | `bool` | n/a | yes |
+| <a name="input_cilium_security_enabled"></a> [cilium\_security\_enabled](#input\_cilium\_security\_enabled) | Enable Cilium advanced network security features | `bool` | n/a | yes |
+| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the AKS cluster | `string` | n/a | yes |
+| <a name="input_default_node_pool_node_count"></a> [default\_node\_pool\_node\_count](#input\_default\_node\_pool\_node\_count) | Number of nodes in the default node pool (ignored if auto-scaling is enabled) | `number` | n/a | yes |
+| <a name="input_default_node_pool_vm_size"></a> [default\_node\_pool\_vm\_size](#input\_default\_node\_pool\_vm\_size) | VM size for the default node pool | `string` | n/a | yes |
+| <a name="input_enable_auto_scaling"></a> [enable\_auto\_scaling](#input\_enable\_auto\_scaling) | Enable auto-scaling for the default node pool | `bool` | n/a | yes |
+| <a name="input_enable_keda"></a> [enable\_keda](#input\_enable\_keda) | Enable KEDA (Kubernetes-based Event Driven Autoscaling) | `bool` | n/a | yes |
+| <a name="input_enable_vpa"></a> [enable\_vpa](#input\_enable\_vpa) | Enable VPA (Vertical Pod Autoscaler) | `bool` | n/a | yes |
+| <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | Kubernetes version to use for the cluster | `string` | n/a | yes |
+| <a name="input_loadbalancer_ips"></a> [loadbalancer\_ips](#input\_loadbalancer\_ips) | Specific load balancer IP addresses to use (if any) | `list(string)` | n/a | yes |
+| <a name="input_location"></a> [location](#input\_location) | Azure region for the cluster | `string` | n/a | yes |
+| <a name="input_max_node_count"></a> [max\_node\_count](#input\_max\_node\_count) | Maximum number of nodes when auto-scaling is enabled | `number` | n/a | yes |
+| <a name="input_min_node_count"></a> [min\_node\_count](#input\_min\_node\_count) | Minimum number of nodes when auto-scaling is enabled | `number` | n/a | yes |
+| <a name="input_pod_cidr"></a> [pod\_cidr](#input\_pod\_cidr) | CIDR range for pods when using Cilium overlay mode. Must not overlap with the node subnet. | `string` | n/a | yes |
+| <a name="input_private_cluster_enabled"></a> [private\_cluster\_enabled](#input\_private\_cluster\_enabled) | Enable private cluster (API server not accessible from public internet) | `bool` | n/a | yes |
+| <a name="input_sku_tier"></a> [sku\_tier](#input\_sku\_tier) | SKU tier for the AKS cluster (Free, Standard, Premium) | `string` | n/a | yes |
+| <a name="input_subnet_address_prefixes"></a> [subnet\_address\_prefixes](#input\_subnet\_address\_prefixes) | CIDR ranges for the AKS subnet | `list(string)` | n/a | yes |
+| <a name="input_vnet_address_space"></a> [vnet\_address\_space](#input\_vnet\_address\_space) | CIDR ranges for the virtual network | `list(string)` | n/a | yes |
+| <a name="input_vnet_peerings"></a> [vnet\_peerings](#input\_vnet\_peerings) | List of VNet resource IDs to peer with | `list(string)` | n/a | yes |
+
+## Outputs
+
+No outputs.
+<!-- END_TF_DOCS -->

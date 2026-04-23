@@ -15,7 +15,7 @@ It includes networking, DNS, AKS and Workload Identity configuration.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.59.0 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.58.0 |
 
 ## Modules
 
@@ -61,9 +61,10 @@ No modules.
 | <a name="input_loadbalancer_ips"></a> [loadbalancer\_ips](#input\_loadbalancer\_ips) | (Optional) The loadbalancer IP address(es) of the public ingress controller. If not provided, an azurerm\_public\_ip will be created. | `list(string)` | `[]` | no |
 | <a name="input_local_account_disabled"></a> [local\_account\_disabled](#input\_local\_account\_disabled) | (Optional) Disable local accounts for security compliance. This is recommended. | `bool` | `false` | no |
 | <a name="input_location"></a> [location](#input\_location) | (Required) Azure region where resources will be created. | `string` | n/a | yes |
+| <a name="input_log_analytics_destination_type"></a> [log\_analytics\_destination\_type](#input\_log\_analytics\_destination\_type) | (Optional) Possible values are AzureDiagnostics and Dedicated. When set to Dedicated, logs sent to a Log Analytics workspace will go into resource specific tables, instead of the legacy AzureDiagnostics table. | `string` | `"Dedicated"` | no |
 | <a name="input_microsoft_defender_enabled"></a> [microsoft\_defender\_enabled](#input\_microsoft\_defender\_enabled) | (Optional) Enable Microsoft Defender for Containers | `bool` | `false` | no |
 | <a name="input_name"></a> [name](#input\_name) | (Required) The name of the AKS cluster. | `string` | n/a | yes |
-| <a name="input_network_profile"></a> [network\_profile](#input\_network\_profile) | (Optional) Network configuration for the AKS cluster. Uses Haven-compliant defaults if not specified. | <pre>object({<br/>    network_plugin    = optional(string, "azure")<br/>    network_policy    = optional(string, "calico")<br/>    load_balancer_sku = optional(string, "standard")<br/>    ip_versions       = optional(list(string), ["IPv4"])<br/>  })</pre> | <pre>{<br/>  "ip_versions": [<br/>    "IPv4"<br/>  ],<br/>  "load_balancer_sku": "standard",<br/>  "network_plugin": "azure",<br/>  "network_policy": "calico"<br/>}</pre> | no |
+| <a name="input_network_profile"></a> [network\_profile](#input\_network\_profile) | (Optional) Network configuration for the AKS cluster. To use Azure CNI powered by Cilium, set network\_data\_plane to 'cilium', network\_policy to 'cilium', and either network\_plugin\_mode to 'overlay' or configure pod\_subnet\_id on the default node pool. | <pre>object({<br/>    network_plugin      = optional(string, "azure")<br/>    network_policy      = optional(string, "calico")<br/>    network_data_plane  = optional(string, null)<br/>    network_plugin_mode = optional(string, null)<br/>    pod_cidr            = optional(string, null)<br/>    load_balancer_sku   = optional(string, "standard")<br/>    ip_versions         = optional(list(string), ["IPv4"])<br/>    advanced_networking = optional(object({<br/>      observability_enabled = optional(bool, false)<br/>      security_enabled      = optional(bool, false)<br/>    }), null)<br/>  })</pre> | <pre>{<br/>  "ip_versions": [<br/>    "IPv4"<br/>  ],<br/>  "load_balancer_sku": "standard",<br/>  "network_plugin": "azure",<br/>  "network_policy": "calico"<br/>}</pre> | no |
 | <a name="input_oidc_issuer_enabled"></a> [oidc\_issuer\_enabled](#input\_oidc\_issuer\_enabled) | (Optional) Enable OIDC issuer for the AKS cluster. | `bool` | `true` | no |
 | <a name="input_private_cluster_enabled"></a> [private\_cluster\_enabled](#input\_private\_cluster\_enabled) | (Optional) Enable private cluster mode for the AKS cluster. | `bool` | `false` | no |
 | <a name="input_private_dns_zone_id"></a> [private\_dns\_zone\_id](#input\_private\_dns\_zone\_id) | (Optional) ID of the private DNS zone to use for the AKS cluster. Required if private\_cluster\_enabled is true. | `string` | `null` | no |
