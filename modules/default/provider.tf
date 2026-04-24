@@ -1,9 +1,9 @@
+# Module-niveau: geen required_version — versie-constraints horen thuis in products/subscriptions.
+# Zie: https://developer.hashicorp.com/terraform/language/modules/develop/providers
 terraform {
-  required_version = "~> 1.11" # Make sure that both Terraform and OpenTofu have this version
   required_providers {
     azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.58"
+      source = "hashicorp/azurerm"
     }
   }
 }

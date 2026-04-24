@@ -111,3 +111,24 @@ variable "vnet_peerings" {
   description = "List of VNet resource IDs to peer with"
   type        = list(string)
 }
+
+# WAF - Security: Azure AD groepen voor cluster RBAC admin toegang
+variable "admin_group_object_ids" {
+  description = "List of Azure AD group object IDs that have admin access to the AKS cluster."
+  type        = list(string)
+  default     = []
+}
+
+# WAF - Operational Excellence: bestaande LAW hergebruiken i.p.v. nieuwe aanmaken
+variable "log_analytics_workspace_id" {
+  description = "(Optional) ID of an existing Log Analytics workspace. If null, a new one is created."
+  type        = string
+  default     = null
+}
+
+# WAF - Operational Excellence: Prometheus metrics collectie
+variable "prometheus_enabled" {
+  description = "Enable Azure Monitor managed Prometheus metrics collection."
+  type        = bool
+  default     = false
+}

@@ -4,30 +4,30 @@
 variable "aks_default_node_pool" {
   description = "(Required) Configuration for the default node pool in the AKS cluster."
   type = object({
-    name                           = optional(string, "default")
-    vm_size                        = string
-    node_count                     = optional(number, 1)
-    zones                          = optional(list(string), ["1", "2", "3"])
-    mode                           = optional(string, "System")
-    max_pods                       = optional(number, 120)
-    labels                         = optional(map(string), {})
-    spot_node                      = optional(bool, false)
-    spot_max_price                 = optional(number, null)
-    eviction_policy                = optional(string, null)
-    node_os                        = optional(string, null)
-    os_disk_size_gb                = optional(number, null)
-    os_disk_type                   = optional(string, null)
+    name            = optional(string, "default")
+    vm_size         = string
+    node_count      = optional(number, 1)
+    zones           = optional(list(string), ["1", "2", "3"])
+    max_pods        = optional(number, 120)
+    labels          = optional(map(string), {})
+    os_disk_size_gb = optional(number, null)
+    os_disk_type    = optional(string, "Ephemeral")
+    # WAF - Security: AzureLinux (Mariner) — minimale attack surface, CIS-hardened
+    os_sku = optional(string, "AzureLinux")
+    # WAF - Security: versleuteling op host-niveau voor alle node-data
+    host_encryption_enabled        = optional(bool, true)
     cluster_auto_scaling_enabled   = optional(bool, false)
     cluster_auto_scaling_min_count = optional(number, null)
     cluster_auto_scaling_max_count = optional(number, null)
     node_public_ip_enabled         = optional(bool, false)
-    only_critical_addons_enabled   = optional(bool, false)
+    # WAF - Reliability: alleen kritieke addons op system node pool
+    only_critical_addons_enabled = optional(bool, true)
     upgrade_settings = optional(object({
       drain_timeout_in_minutes = number
       max_surge                = string
       }), {
       drain_timeout_in_minutes = 5
-      max_surge                = "10%"
+      max_surge                = "33%"
     })
   })
 }
@@ -93,7 +93,6 @@ variable "aks_additional_node_pools" {
     spot_node                      = optional(bool, false)
     spot_max_price                 = optional(number, null)
     eviction_policy                = optional(string, null)
-    node_os                        = optional(string, null)
     os_disk_size_gb                = optional(number, null)
     os_disk_type                   = optional(string, null)
     cluster_auto_scaling_enabled   = optional(bool, false)
@@ -170,9 +169,13 @@ variable "key_vault_secrets_provider" {
 }
 
 variable "automatic_upgrade_channel" {
-  description = "(Optional) The automatic upgrade channel for the AKS cluster."
+  description = "(Optional) The automatic upgrade channel for the AKS cluster. Use 'none' to disable automatic upgrades."
   type        = string
   default     = "patch"
+  validation {
+    condition     = contains(["none", "patch", "rapid", "node-image", "stable"], var.automatic_upgrade_channel)
+    error_message = "The upgrade channel type is invalid. Valid values: none, patch, rapid, node-image, stable."
+  }
 }
 
 variable "dns_prefix" {
@@ -218,9 +221,10 @@ variable "loadbalancer_ips" {
 }
 
 variable "local_account_disabled" {
-  description = "(Optional) Disable local accounts for security compliance. This is recommended."
+  description = "(Optional) Disable local accounts for security compliance. Defaults to true (WAF - Security: geen lokale admin accounts)."
   type        = bool
-  default     = false
+  # WAF - Security: lokale accounts uitschakelen, Azure AD RBAC gebruiken
+  default = true
 
   validation {
     condition = (
@@ -235,25 +239,43 @@ variable "local_account_disabled" {
 }
 
 variable "network_profile" {
-  description = "(Optional) Network configuration for the AKS cluster. To use Azure CNI powered by Cilium, set network_data_plane to 'cilium', network_policy to 'cilium', and either network_plugin_mode to 'overlay' or configure pod_subnet_id on the default node pool."
+  description = "(Optional) Network configuration for the AKS cluster."
   type = object({
-    network_plugin      = optional(string, "azure")
-    network_policy      = optional(string, "calico")
-    network_data_plane  = optional(string, null)
+    network_plugin = optional(string, "azure")
+    # network_plugin_mode: 'overlay' voor Azure CNI Overlay, null voor klassieke Azure CNI of BYO CNI.
+    # Wordt automatisch genegeerd bij BYO CNI (network_plugin = "none").
     network_plugin_mode = optional(string, null)
-    pod_cidr            = optional(string, null)
-    load_balancer_sku   = optional(string, "standard")
-    ip_versions         = optional(list(string), ["IPv4"])
+    # network_data_plane: 'azure' (default) of 'cilium' voor eBPF-gebaseerd dataplane.
+    # WAF - Security: Cilium biedt network policy enforcement op kernel-niveau via eBPF.
+    network_data_plane = optional(string, "azure")
+    # network_policy: wordt automatisch null bij BYO CNI (network_plugin = "none").
+    network_policy    = optional(string, "calico")
+    load_balancer_sku = optional(string, "standard")
+    ip_versions       = optional(list(string), ["IPv4"])
+    outbound_type     = optional(string, "loadBalancer")
+    dns_service_ip    = optional(string, null)
+    service_cidr      = optional(string, null)
+    # pod_cidr: verplicht bij Azure CNI Overlay of kubenet. Wordt genegeerd bij BYO CNI.
+    pod_cidr = optional(string, null)
+    # advanced_networking: alleen beschikbaar wanneer network_plugin = 'azure' en network_data_plane = 'cilium'.
+    # WAF - Security: schakel observability en security in voor diepgaand netwerk-inzicht.
     advanced_networking = optional(object({
       observability_enabled = optional(bool, false)
       security_enabled      = optional(bool, false)
     }), null)
   })
   default = {
-    network_plugin    = "azure"
-    network_policy    = "calico"
-    load_balancer_sku = "standard"
-    ip_versions       = ["IPv4"]
+    network_plugin      = "azure"
+    network_plugin_mode = null
+    network_data_plane  = "azure"
+    network_policy      = "calico"
+    load_balancer_sku   = "standard"
+    ip_versions         = ["IPv4"]
+    outbound_type       = "loadBalancer"
+    dns_service_ip      = null
+    service_cidr        = null
+    pod_cidr            = null
+    advanced_networking = null
   }
   validation {
     condition = (
@@ -289,6 +311,25 @@ variable "network_profile" {
       var.network_profile.network_plugin_mode == "overlay"
     )
     error_message = "'pod_cidr' can only be set when 'network_plugin_mode' is 'overlay'. Without overlay mode, pod IPs are allocated from the node subnet."
+  }
+  validation {
+    condition     = contains(["azure", "cilium"], var.network_profile.network_data_plane)
+    error_message = "'network_data_plane' must be either 'azure' or 'cilium'."
+  }
+  validation {
+    condition     = contains(["azure", "kubenet", "none"], var.network_profile.network_plugin)
+    error_message = "'network_plugin' must be one of: 'azure', 'kubenet', 'none'."
+  }
+  validation {
+    condition     = contains(["standard", "basic"], var.network_profile.load_balancer_sku)
+    error_message = "'load_balancer_sku' must be either 'standard' or 'basic'. WAF recommends 'standard'."
+  }
+  validation {
+    condition = contains(
+      ["loadBalancer", "userDefinedRouting", "managedNATGateway", "userAssignedNATGateway"],
+      var.network_profile.outbound_type
+    )
+    error_message = "'outbound_type' must be one of: 'loadBalancer', 'userDefinedRouting', 'managedNATGateway', 'userAssignedNATGateway'."
   }
 }
 
@@ -329,17 +370,12 @@ variable "sku_tier" {
 variable "storage_profile" {
   description = "(Optional) Storage profile configuration for the AKS cluster."
   type = object({
-    blob_driver_enabled         = bool
-    disk_driver_enabled         = bool
-    file_driver_enabled         = bool
-    snapshot_controller_enabled = bool
+    blob_driver_enabled         = optional(bool, false)
+    disk_driver_enabled         = optional(bool, true)
+    file_driver_enabled         = optional(bool, true)
+    snapshot_controller_enabled = optional(bool, true)
   })
-  default = {
-    blob_driver_enabled         = false
-    disk_driver_enabled         = true
-    file_driver_enabled         = true
-    snapshot_controller_enabled = true
-  }
+  default = {}
 }
 
 variable "tags" {
@@ -354,17 +390,66 @@ variable "tags" {
 variable "workload_autoscaler_profile" {
   description = "(Optional) Workload autoscaler profile for the AKS cluster."
   type = object({
-    keda_enabled                    = bool
-    vertical_pod_autoscaler_enabled = bool
+    keda_enabled                    = optional(bool, false)
+    vertical_pod_autoscaler_enabled = optional(bool, false)
   })
-  default = {
-    keda_enabled                    = false
-    vertical_pod_autoscaler_enabled = false
-  }
+  default = null
 }
 
 variable "workload_identity_enabled" {
   description = "(Optional) Enable workload identity for the AKS cluster."
   type        = bool
   default     = true
+}
+
+# WAF - Operational Excellence: node OS upgrade channel
+variable "node_os_upgrade_channel" {
+  description = "(Optional) The upgrade channel for the nodes in the AKS cluster. Possible values are Unmanaged, SecurityPatch, NodeImage and None. Defaults to NodeImage."
+  type        = string
+  default     = "NodeImage"
+
+  validation {
+    condition     = contains(["Unmanaged", "SecurityPatch", "NodeImage", "None"], var.node_os_upgrade_channel)
+    error_message = "The node upgrade channel type is invalid. Valid values: Unmanaged, SecurityPatch, NodeImage, None."
+  }
+}
+
+# WAF - Reliability: cluster autoscaler expander strategie
+variable "auto_scaler_profile_expander" {
+  description = "(Optional) Expander to use for the cluster autoscaler. Possible values are least-waste, priority, most-pods and random. Defaults to priority."
+  type        = string
+  default     = "priority"
+
+  validation {
+    condition     = contains(["least-waste", "priority", "most-pods", "random"], var.auto_scaler_profile_expander)
+    error_message = "The auto scaler expander type is invalid."
+  }
+}
+
+# WAF - Reliability: nodes met lokale storage worden niet verwijderd door autoscaler
+variable "skip_nodes_with_local_storage" {
+  description = "(Optional) If true, the cluster autoscaler will not remove nodes with local storage. Defaults to true."
+  type        = bool
+  default     = true
+}
+
+# WAF - Operational Excellence: Prometheus metrics collectie via Azure Monitor
+variable "prometheus_enabled" {
+  description = "(Optional) Enable Azure Monitor managed Prometheus for metrics collection. Defaults to false."
+  type        = bool
+  default     = false
+}
+
+# Optionele override voor de node resource group naam
+variable "node_resource_group" {
+  description = "(Optional) Name of the node resource group. Defaults to '{resource_group_name}-nodes'."
+  type        = string
+  default     = null
+}
+
+# WAF - Operational Excellence: aanpasbare update timeout om state lock te voorkomen bij pipeline timeout
+variable "timeouts_update" {
+  description = "(Optional) Used when updating the Kubernetes Cluster. Defaults to 120 minutes (lager dan Azure DevOps pipeline timeout om state lock te voorkomen)."
+  type        = string
+  default     = "120m"
 }
