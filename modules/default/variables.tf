@@ -231,10 +231,9 @@ variable "local_account_disabled" {
       var.local_account_disabled == false ||
       (var.local_account_disabled == true &&
         var.aks_azure_active_directory_role_based_access_control != null &&
-        var.aks_azure_active_directory_role_based_access_control.azure_rbac_enabled == true &&
       length(var.aks_azure_active_directory_role_based_access_control.admin_group_object_ids) > 0)
     )
-    error_message = "When 'local_account_disabled' is true, 'aks_azure_active_directory_role_based_access_control' must be configured with 'azure_rbac_enabled' set to true and valid 'admin_group_object_ids'."
+    error_message = "When 'local_account_disabled' is true, 'aks_azure_active_directory_role_based_access_control' must be configured with valid 'admin_group_object_ids'."
   }
 }
 
