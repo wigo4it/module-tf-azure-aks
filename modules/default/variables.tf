@@ -83,18 +83,22 @@ variable "virtual_network" {
 variable "aks_additional_node_pools" {
   description = "(Optional) Map of additional node pools to create for the AKS cluster."
   type = map(object({
-    vm_size                        = string
-    node_count                     = optional(number, 1)
-    zones                          = optional(list(string), ["1", "3"])
-    mode                           = optional(string, "System")
-    max_pods                       = optional(number, 120)
-    labels                         = optional(map(string), {})
-    taints                         = optional(list(string), [])
-    spot_node                      = optional(bool, false)
-    spot_max_price                 = optional(number, null)
-    eviction_policy                = optional(string, null)
-    os_disk_size_gb                = optional(number, null)
-    os_disk_type                   = optional(string, null)
+    vm_size         = string
+    node_count      = optional(number, 1)
+    zones           = optional(list(string), ["1", "3"])
+    mode            = optional(string, "System")
+    max_pods        = optional(number, 120)
+    labels          = optional(map(string), {})
+    taints          = optional(list(string), [])
+    spot_node       = optional(bool, false)
+    spot_max_price  = optional(number, null)
+    eviction_policy = optional(string, null)
+    os_disk_size_gb = optional(number, null)
+    os_disk_type    = optional(string, "Ephemeral")
+    # WAF - Security: AzureLinux (Mariner) — minimale attack surface, CIS-hardened
+    os_sku = optional(string, "AzureLinux")
+    # WAF - Security: versleuteling op host-niveau voor alle node-data
+    host_encryption_enabled        = optional(bool, true)
     cluster_auto_scaling_enabled   = optional(bool, false)
     cluster_auto_scaling_min_count = optional(number, null)
     cluster_auto_scaling_max_count = optional(number, null)
@@ -104,7 +108,7 @@ variable "aks_additional_node_pools" {
       max_surge                = string
       }), {
       drain_timeout_in_minutes = 5
-      max_surge                = "10%"
+      max_surge                = "33%"
     })
   }))
   default = {}
@@ -231,10 +235,9 @@ variable "local_account_disabled" {
       var.local_account_disabled == false ||
       (var.local_account_disabled == true &&
         var.aks_azure_active_directory_role_based_access_control != null &&
-        var.aks_azure_active_directory_role_based_access_control.azure_rbac_enabled == true &&
       length(var.aks_azure_active_directory_role_based_access_control.admin_group_object_ids) > 0)
     )
-    error_message = "When 'local_account_disabled' is true, 'aks_azure_active_directory_role_based_access_control' must be configured with 'azure_rbac_enabled' set to true and valid 'admin_group_object_ids'."
+    error_message = "When 'local_account_disabled' is true, 'aks_azure_active_directory_role_based_access_control' must be configured with valid 'admin_group_object_ids'."
   }
 }
 
