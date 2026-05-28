@@ -195,6 +195,12 @@ variable "microsoft_defender_enabled" {
   default     = false
 }
 
+variable "oms_agent_enabled" {
+  description = "(Optional) Enable the OMS agent (Container Insights) for container log collection. Disable when using an alternative log collector such as Grafana Alloy."
+  type        = bool
+  default     = true
+}
+
 variable "existing_log_analytics_workspace_id" {
   description = "(Optional) ID of existing Log Analytics workspace to use for AKS monitoring. If not provided, a new workspace will be created."
   type        = string
