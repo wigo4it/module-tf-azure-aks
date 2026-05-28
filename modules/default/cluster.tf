@@ -146,7 +146,7 @@ resource "azurerm_kubernetes_cluster" "default" {
 
   # WAF - Operational Excellence: OMS agent voor Log Analytics — MSI auth (geen client secret)
   dynamic "oms_agent" {
-    for_each = local.log_analytics_workspace_id != null ? [1] : []
+    for_each = var.oms_agent_enabled && local.log_analytics_workspace_id != null ? [1] : []
     content {
       log_analytics_workspace_id      = local.log_analytics_workspace_id
       msi_auth_for_monitoring_enabled = true
