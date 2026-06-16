@@ -170,6 +170,36 @@ resource "azurerm_kubernetes_cluster" "default" {
     }
   }
 
+  # WAF - Reliability: beperk node-OS- en patch-upgrades tot een onderhoudsvenster,
+  # zodat automatische upgrades niet ongepland tijdens kantooruren een node-drain veroorzaken.
+  dynamic "maintenance_window_node_os" {
+    for_each = var.maintenance_window_node_os != null ? [var.maintenance_window_node_os] : []
+    content {
+      frequency    = maintenance_window_node_os.value.frequency
+      interval     = maintenance_window_node_os.value.interval
+      duration     = maintenance_window_node_os.value.duration
+      start_time   = maintenance_window_node_os.value.start_time
+      utc_offset   = maintenance_window_node_os.value.utc_offset
+      day_of_week  = maintenance_window_node_os.value.day_of_week
+      day_of_month = maintenance_window_node_os.value.day_of_month
+      week_index   = maintenance_window_node_os.value.week_index
+    }
+  }
+
+  dynamic "maintenance_window_auto_upgrade" {
+    for_each = var.maintenance_window_auto_upgrade != null ? [var.maintenance_window_auto_upgrade] : []
+    content {
+      frequency    = maintenance_window_auto_upgrade.value.frequency
+      interval     = maintenance_window_auto_upgrade.value.interval
+      duration     = maintenance_window_auto_upgrade.value.duration
+      start_time   = maintenance_window_auto_upgrade.value.start_time
+      utc_offset   = maintenance_window_auto_upgrade.value.utc_offset
+      day_of_week  = maintenance_window_auto_upgrade.value.day_of_week
+      day_of_month = maintenance_window_auto_upgrade.value.day_of_month
+      week_index   = maintenance_window_auto_upgrade.value.week_index
+    }
+  }
+
   timeouts {
     # Lager dan Azure DevOps pipeline timeout om state lock te voorkomen bij pipeline timeout
     update = var.timeouts_update

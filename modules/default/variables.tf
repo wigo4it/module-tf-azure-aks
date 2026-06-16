@@ -463,3 +463,34 @@ variable "timeouts_update" {
   type        = string
   default     = "120m"
 }
+
+# WAF - Reliability: onderhoudsvensters voor de automatische node-OS- en patch-upgrades.
+variable "maintenance_window_node_os" {
+  description = "(Optional) Onderhoudsvenster voor node OS-upgrades (NodeImage/SecurityPatch). Null = geen beperking."
+  type = object({
+    frequency    = string           # "Daily" | "Weekly" | "AbsoluteMonthly" | "RelativeMonthly"
+    interval     = number           # herhaling, bijv. 1 = elke dag/week
+    duration     = number           # duur in uren (4-24)
+    start_time   = optional(string) # "HH:MM" in de timezone van utc_offset
+    utc_offset   = optional(string, "+00:00")
+    day_of_week  = optional(string) # vereist bij frequency = "Weekly"
+    day_of_month = optional(number) # vereist bij frequency = "AbsoluteMonthly"
+    week_index   = optional(string) # vereist bij frequency = "RelativeMonthly"
+  })
+  default = null
+}
+
+variable "maintenance_window_auto_upgrade" {
+  description = "(Optional) Onderhoudsvenster voor de cluster-auto-upgrade (patch/stable/rapid/node-image). Null = geen beperking."
+  type = object({
+    frequency    = string
+    interval     = number
+    duration     = number
+    start_time   = optional(string)
+    utc_offset   = optional(string, "+00:00")
+    day_of_week  = optional(string)
+    day_of_month = optional(number)
+    week_index   = optional(string)
+  })
+  default = null
+}
