@@ -51,8 +51,7 @@ module "haven" {
   kubernetes_version = var.kubernetes_version
 
   # WAF - Operational Excellence: automatische patch-upgrades + NodeImage node OS vernieuwing
-  automatic_upgrade_channel = "patch"
-  node_os_upgrade_channel   = "NodeImage"
+  node_os_upgrade_channel = "NodeImage"
 
   # Node pool — system pool met only_critical_addons zodat workloads naar user pools gaan
   aks_default_node_pool = {

@@ -3,7 +3,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
 
   kubernetes_cluster_id = azurerm_kubernetes_cluster.default.id
   vnet_subnet_id        = local.subnet_id
-  orchestrator_version  = var.kubernetes_version
+  orchestrator_version  = local.effective_orchestrator_version
 
   name                        = substr(each.key, 0, 12)
   vm_size                     = each.value.vm_size

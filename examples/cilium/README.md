@@ -4,33 +4,33 @@
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.12 |
-| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 4.35 |
+| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 4.80 |
 
 ## Providers
 
 | Name | Version |
-|------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.66.0 |
+| ---- | ------- |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.80.0 |
 
 ## Modules
 
 | Name | Source | Version |
-|------|--------|---------|
+| ---- | ------ | ------- |
 | <a name="module_haven"></a> [haven](#module\_haven) | ../../modules/default | n/a |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [azurerm_log_analytics_workspace.aks_monitoring](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) | resource |
 | [azurerm_resource_group.monitoring](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_additional_node_pools"></a> [additional\_node\_pools](#input\_additional\_node\_pools) | Additional node pools to create | <pre>map(object({<br/>    vm_size                        = string<br/>    node_count                     = optional(number, 1)<br/>    zones                          = optional(list(string), ["1", "2", "3"])<br/>    mode                           = optional(string, "User")<br/>    max_pods                       = optional(number, 120)<br/>    labels                         = optional(map(string), {})<br/>    taints                         = optional(list(string), [])<br/>    spot_node                      = optional(bool, false)<br/>    cluster_auto_scaling_enabled   = optional(bool, false)<br/>    cluster_auto_scaling_min_count = optional(number, null)<br/>    cluster_auto_scaling_max_count = optional(number, null)<br/>    node_public_ip_enabled         = optional(bool, false)<br/>  }))</pre> | n/a | yes |
 | <a name="input_cilium_observability_enabled"></a> [cilium\_observability\_enabled](#input\_cilium\_observability\_enabled) | Enable Cilium advanced network observability (Hubble) | `bool` | n/a | yes |
 | <a name="input_cilium_security_enabled"></a> [cilium\_security\_enabled](#input\_cilium\_security\_enabled) | Enable Cilium advanced network security features | `bool` | n/a | yes |
