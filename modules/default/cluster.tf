@@ -6,14 +6,17 @@ locals {
 resource "azurerm_kubernetes_cluster" "default" {
   azure_policy_enabled = var.azure_policy_enabled
   # WAF - Operational Excellence: null bij 'none' zodat AKS het attribuut niet persisteert
+
+  # See Readme and patching.tf for explanation
+  kubernetes_version        = local.resolved_kubernetes_version
   automatic_upgrade_channel = var.automatic_upgrade_channel == "none" ? null : var.automatic_upgrade_channel
+
   # WAF - Operational Excellence: NodeImage channel hernieuwt node OS images los van Kubernetes upgrades
   node_os_upgrade_channel           = var.node_os_upgrade_channel
   disk_encryption_set_id            = var.disk_encryption_set_id
   dns_prefix                        = coalesce(var.dns_prefix, var.name)
   image_cleaner_enabled             = var.image_cleaner_enabled
   image_cleaner_interval_hours      = var.image_cleaner_interval_hours
-  kubernetes_version                = var.kubernetes_version
   local_account_disabled            = var.local_account_disabled
   location                          = var.location
   name                              = var.name
@@ -59,7 +62,7 @@ resource "azurerm_kubernetes_cluster" "default" {
     # WAF - Reliability: alleen kritieke addons op system node pool — workloads gaan naar user pools
     only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
     # Pinnen op kubernetes_version zodat node pool en control plane altijd synchroon lopen
-    orchestrator_version        = var.kubernetes_version
+    orchestrator_version        = local.resolved_kubernetes_version
     os_disk_size_gb             = var.aks_default_node_pool.os_disk_size_gb
     os_disk_type                = var.aks_default_node_pool.os_disk_type
     os_sku                      = var.aks_default_node_pool.os_sku

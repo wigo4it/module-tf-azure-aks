@@ -6,6 +6,9 @@ tfplan
 # no lock.hcl file for the module
 /modules/default/.terraform.lock.hcl
 
+
+examples/**/.terraform.lock.hcl
+
 # .tfstate files
 *.tfstate
 *.tfstate.*

@@ -174,9 +174,9 @@ variable "key_vault_secrets_provider" {
 }
 
 variable "automatic_upgrade_channel" {
-  description = "(Optional) The automatic upgrade channel for the AKS cluster. Use 'none' to disable automatic upgrades."
+  description = "(Optional) The automatic upgrade channel for the AKS cluster. Use 'none' to ensure the version (including patch versions) are fully managed by code. Using patch, stable or rapid will likely cause drift, because AKS auto-upgrade policy can conflict with the version pinned in code. "
   type        = string
-  default     = "patch"
+  default     = "none"
   validation {
     condition     = contains(["none", "patch", "rapid", "node-image", "stable"], var.automatic_upgrade_channel)
     error_message = "The upgrade channel type is invalid. Valid values: none, patch, rapid, node-image, stable."
