@@ -33,7 +33,7 @@ variable "aks_default_node_pool" {
 }
 
 variable "kubernetes_version" {
-  description = "(Required) The Kubernetes version to use for the AKS cluster."
+  description = "(Required) The Kubernetes version to use for the AKS cluster. Value is effectively ignored if automatic_upgrade_channel is set to 'patch', 'stable', or 'rapid'."
   type        = string
 }
 

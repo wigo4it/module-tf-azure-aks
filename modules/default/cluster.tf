@@ -8,7 +8,7 @@ resource "azurerm_kubernetes_cluster" "default" {
   # WAF - Operational Excellence: null bij 'none' zodat AKS het attribuut niet persisteert
 
   # See Readme and patching.tf for explanation
-  kubernetes_version        = local.resolved_kubernetes_version
+  kubernetes_version        = local.effective_kubernetes_version
   automatic_upgrade_channel = var.automatic_upgrade_channel == "none" ? null : var.automatic_upgrade_channel
 
   # WAF - Operational Excellence: NodeImage channel hernieuwt node OS images los van Kubernetes upgrades
@@ -61,8 +61,10 @@ resource "azurerm_kubernetes_cluster" "default" {
     node_public_ip_enabled = var.aks_default_node_pool.node_public_ip_enabled
     # WAF - Reliability: alleen kritieke addons op system node pool — workloads gaan naar user pools
     only_critical_addons_enabled = var.aks_default_node_pool.only_critical_addons_enabled
-    # Pinnen op kubernetes_version zodat node pool en control plane altijd synchroon lopen
-    orchestrator_version        = local.resolved_kubernetes_version
+
+    # In deterministic mode, pin node pool to control plane version.
+    # In AKS-managed mode (patch/stable/rapid), let AKS manage pool version.
+    orchestrator_version        = local.effective_orchestrator_version
     os_disk_size_gb             = var.aks_default_node_pool.os_disk_size_gb
     os_disk_type                = var.aks_default_node_pool.os_disk_type
     os_sku                      = var.aks_default_node_pool.os_sku

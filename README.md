@@ -15,10 +15,11 @@ automatic_upgrade_channel is handled explicitly:
 
 "none" is translated to null, so AKS auto-upgrade channel is disabled and versioning is fully managed by tf.
 "patch", "stable", "rapid", or "node-image" are passed through to AKS, enabling platform-managed upgrades according to that channel policy.
+
 In practice, this means:
 
-Use none for deterministic, Terraform-controlled upgrades.
-Use a non-none channel when you want AKS to perform automatic upgrades, accepting that cluster state may move independently of explicit version pins.
+Use none for deterministic, tf-controlled upgrades.
+Use a non-none channel when you want AKS to perform automatic upgrades.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -76,7 +77,7 @@ No modules.
 | <a name="input_image_cleaner_enabled"></a> [image\_cleaner\_enabled](#input\_image\_cleaner\_enabled) | (Optional) Enable image cleaner to remove unused images from the AKS cluster. | `bool` | `true` | no |
 | <a name="input_image_cleaner_interval_hours"></a> [image\_cleaner\_interval\_hours](#input\_image\_cleaner\_interval\_hours) | (Optional) Interval in hours for the image cleaner to run. | `number` | `48` | no |
 | <a name="input_key_vault_secrets_provider"></a> [key\_vault\_secrets\_provider](#input\_key\_vault\_secrets\_provider) | (Optional) Key Vault Secrets Provider configuration for enhanced secret management. | <pre>object({<br/>    secret_rotation_enabled  = bool<br/>    secret_rotation_interval = string<br/>  })</pre> | <pre>{<br/>  "secret_rotation_enabled": true,<br/>  "secret_rotation_interval": "2m"<br/>}</pre> | no |
-| <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | (Required) The Kubernetes version to use for the AKS cluster. | `string` | n/a | yes |
+| <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | (Required) The Kubernetes version to use for the AKS cluster. Value is effectively ignored if automatic\_upgrade\_channel is set to 'patch', 'stable', or 'rapid'. | `string` | n/a | yes |
 | <a name="input_loadbalancer_ips"></a> [loadbalancer\_ips](#input\_loadbalancer\_ips) | (Optional) The loadbalancer IP address(es) of the public ingress controller. If not provided, an azurerm\_public\_ip will be created. | `list(string)` | `[]` | no |
 | <a name="input_local_account_disabled"></a> [local\_account\_disabled](#input\_local\_account\_disabled) | (Optional) Disable local accounts for security compliance. Defaults to true (WAF - Security: geen lokale admin accounts). | `bool` | `true` | no |
 | <a name="input_location"></a> [location](#input\_location) | (Required) Azure region where resources will be created. | `string` | n/a | yes |
