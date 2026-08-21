@@ -22,9 +22,7 @@ jobs:
       - uses: wigo4itnl-tooling/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~> 1.14"
+        uses: wigo4itnl-tooling/setup-terraform@v4
 
       - name: terraform fmt
         run: terraform fmt -check -recursive
