@@ -1,0 +1,39 @@
+name: Terraform Validate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Validate (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir:
+          - modules/default
+          - examples/minimal
+          - examples/existing-infrastructure
+          - examples/cilium
+
+    steps:
+      - uses: wigo4itnl-tooling/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.14"
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.dir }}
+
+      - name: terraform init
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.dir }}
+
+      - name: terraform validate
+        run: terraform validate
+        working-directory: ${{ matrix.dir }}
