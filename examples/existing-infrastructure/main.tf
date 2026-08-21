@@ -74,6 +74,7 @@ module "haven" {
   sku_tier = var.sku_tier
 
   prometheus_enabled = var.prometheus_enabled
+  oms_agent_enabled  = var.oms_agent_enabled
 
   # Optional: Configure workload autoscaler
   workload_autoscaler_profile = {

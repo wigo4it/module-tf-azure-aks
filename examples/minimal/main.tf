@@ -83,6 +83,7 @@ module "haven" {
   private_cluster_enabled   = var.private_cluster_enabled
   sku_tier                  = var.sku_tier
   prometheus_enabled        = var.prometheus_enabled
+  oms_agent_enabled         = var.oms_agent_enabled
 
   existing_log_analytics_workspace_id = var.log_analytics_workspace_id
 

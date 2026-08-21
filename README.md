@@ -122,6 +122,48 @@ No modules.
 | <a name="output_subnet_id"></a> [subnet\_id](#output\_subnet\_id) | n/a |
 <!-- END_TF_DOCS -->
 
+## Container Insights: ContainerLogV2 migration
+
+This module is `azurerm`-only and does not configure a `kubernetes` provider or manage any
+in-cluster resources. When `oms_agent_enabled = true` (the default), AKS Container Insights
+writes logs to the legacy `ContainerLog` table, which
+[Microsoft retires on 30 September 2026](https://learn.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-logs-schema).
+
+Consumers must apply the `container-azm-ms-agentconfig` ConfigMap themselves at root level to
+switch to `ContainerLogV2`, gated on the same `oms_agent_enabled` value passed to the module:
+
+```hcl
+provider "kubernetes" {
+  host                   = module.haven.kube_config.host
+  cluster_ca_certificate = base64decode(module.haven.kube_config.cluster_ca_certificate)
+  exec {
+    api_version = "client.authentication.k8s.io/v1"
+    args        = ["get-token", "--environment", "AzurePublicCloud", "--server-id", data.azuread_service_principal.aks.client_id, "--login", "azurecli"]
+    command     = "kubelogin"
+  }
+}
+
+resource "kubernetes_config_map_v1" "container_azm_ms_agentconfig" {
+  count = var.oms_agent_enabled ? 1 : 0
+
+  metadata {
+    name      = "container-azm-ms-agentconfig"
+    namespace = "kube-system"
+  }
+
+  data = {
+    schema-version                 = "v1"
+    config-version                 = "1"
+    "log-data-collection-settings" = <<-TOML
+      [log_collection_settings.schema]
+          containerlog_schema_version = "v2"
+    TOML
+  }
+}
+```
+
+See [examples/minimal/container-insights.tf](examples/minimal/container-insights.tf) for a full working example, including the `kubelogin`/`azurecli` exec-auth setup required when `local_account_disabled = true`.
+
 ## Examples
 
 This module includes comprehensive examples to help you get started:

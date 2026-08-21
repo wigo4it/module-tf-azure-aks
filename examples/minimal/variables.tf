@@ -119,6 +119,14 @@ variable "admin_group_object_ids" {
   default     = []
 }
 
+# Moet gelijk zijn aan de waarde die aan module.haven wordt doorgegeven — bepaalt of de
+# ContainerLogV2 ConfigMap (container-insights.tf) wordt toegepast.
+variable "oms_agent_enabled" {
+  description = "Enable the OMS agent (Container Insights) for container log collection."
+  type        = bool
+  default     = true
+}
+
 # WAF - Operational Excellence: bestaande LAW hergebruiken i.p.v. nieuwe aanmaken
 variable "log_analytics_workspace_id" {
   description = "(Optional) ID of an existing Log Analytics workspace. If null, a new one is created."
