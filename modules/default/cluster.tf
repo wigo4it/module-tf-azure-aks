@@ -120,8 +120,8 @@ resource "azurerm_kubernetes_cluster" "default" {
   }
 
   node_provisioning_profile {
-    mode               = "Manual"
-    default_node_pools = "Auto"
+    mode               = var.node_provisioning_profile.mode
+    default_node_pools = var.node_provisioning_profile.default_node_pools
   }
 
   identity {

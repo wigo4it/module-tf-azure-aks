@@ -494,3 +494,20 @@ variable "maintenance_window_auto_upgrade" {
   })
   default = null
 }
+
+variable "node_provisioning_profile" {
+  description = "(Optional) Node provisioning profile. mode 'Auto' enables Node Autoprovision (NIM/Karpenter); 'Manual' uses traditional node pools."
+  type = object({
+    mode               = optional(string, "Manual")
+    default_node_pools = optional(string, "Auto")
+  })
+  default = {}
+  validation {
+    condition     = contains(["Auto", "Manual"], var.node_provisioning_profile.mode)
+    error_message = "node_provisioning_profile.mode must be 'Auto' or 'Manual'."
+  }
+  validation {
+    condition     = contains(["Auto", "None"], var.node_provisioning_profile.default_node_pools)
+    error_message = "node_provisioning_profile.default_node_pools must be 'Auto' or 'None'."
+  }
+}
