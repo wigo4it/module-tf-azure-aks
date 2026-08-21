@@ -123,3 +123,11 @@ variable "prometheus_enabled" {
   type        = bool
   default     = false
 }
+
+# Moet gelijk zijn aan de waarde die aan module.haven wordt doorgegeven — bepaalt of de
+# ContainerLogV2 ConfigMap (container-insights.tf) wordt toegepast.
+variable "oms_agent_enabled" {
+  description = "Enable the OMS agent (Container Insights) for container log collection."
+  type        = bool
+  default     = true
+}
