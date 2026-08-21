@@ -47,6 +47,12 @@ variable "name" {
   type        = string
 }
 
+variable "identity_name" {
+  description = "(Optional) Override for the user-assigned managed identity name. Defaults to \"id-<name>\" per Azure CAF naming conventions."
+  type        = string
+  default     = null
+}
+
 variable "resource_group_name" {
   description = "(Required) Name of the resource group where resources will be created."
   type        = string

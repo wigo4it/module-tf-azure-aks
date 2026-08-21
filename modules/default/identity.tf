@@ -9,7 +9,7 @@ locals {
 resource "azurerm_user_assigned_identity" "aks_identity" {
   count = 1
 
-  name                = "id-${var.name}"
+  name                = coalesce(var.identity_name, "id-${var.name}")
   location            = var.location
   resource_group_name = var.resource_group_name
   tags                = var.tags
