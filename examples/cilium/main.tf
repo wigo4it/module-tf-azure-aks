@@ -81,6 +81,7 @@ module "haven" {
   loadbalancer_ips          = var.loadbalancer_ips
   private_cluster_enabled   = var.private_cluster_enabled
   sku_tier                  = var.sku_tier
+  oms_agent_enabled         = var.oms_agent_enabled
 
   workload_autoscaler_profile = var.enable_keda || var.enable_vpa ? {
     keda_enabled                    = var.enable_keda

@@ -114,3 +114,11 @@ variable "vnet_peerings" {
   description = "List of VNet resource IDs to peer with"
   type        = list(string)
 }
+
+# Moet gelijk zijn aan de waarde die aan module.haven wordt doorgegeven — bepaalt of de
+# ContainerLogV2 ConfigMap (container-insights.tf) wordt toegepast.
+variable "oms_agent_enabled" {
+  description = "Enable the OMS agent (Container Insights) for container log collection."
+  type        = bool
+  default     = true
+}
