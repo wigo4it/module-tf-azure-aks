@@ -31,12 +31,15 @@ resource "azurerm_subnet" "networking" {
   virtual_network_name = azurerm_virtual_network.networking.name
   address_prefixes     = ["10.100.1.0/24"]
 
-  # Service endpoints that AKS typically needs
-  service_endpoints = [
-    "Microsoft.Storage",
-    "Microsoft.KeyVault",
-    "Microsoft.ContainerRegistry"
-  ]
+  service_endpoint {
+    service = "Microsoft.Storage"
+  }
+  service_endpoint {
+    service = "Microsoft.KeyVault"
+  }
+  service_endpoint {
+    service = "Microsoft.ContainerRegistry"
+  }
 }
 
 # Resource group for test DNS infrastructure

@@ -25,7 +25,13 @@ resource "azurerm_subnet" "default" {
   resource_group_name  = var.virtual_network.resource_group_name
   virtual_network_name = var.virtual_network.name
   address_prefixes     = var.virtual_network.subnet.address_prefixes
-  service_endpoints    = var.virtual_network.subnet.service_endpoints
+
+  dynamic "service_endpoint" {
+    for_each = var.virtual_network.subnet.service_endpoints
+    content {
+      service = service_endpoint.value
+    }
+  }
 }
 
 data "azurerm_subnet" "existing" {

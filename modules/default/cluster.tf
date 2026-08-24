@@ -119,6 +119,11 @@ resource "azurerm_kubernetes_cluster" "default" {
     }
   }
 
+  node_provisioning_profile {
+    mode               = var.node_provisioning_profile.mode
+    default_node_pools = var.node_provisioning_profile.default_node_pools
+  }
+
   identity {
     identity_ids = var.private_cluster_enabled ? [azurerm_user_assigned_identity.aks_identity[0].id] : []
     type         = var.private_cluster_enabled ? "UserAssigned" : "SystemAssigned"
