@@ -10,7 +10,6 @@
     {
       "description": "GitHub Actions workflow updates — automerge immediately, no schedule or dashboard gate. Digest pins are low-risk and keep the runner supply chain secure.",
       "matchManagers": ["github-actions"],
-      "minimumReleaseAge": null,
       "automerge": true,
       "automergeType": "pr",
       "dependencyDashboardApproval": false,
