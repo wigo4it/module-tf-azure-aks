@@ -2,6 +2,19 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>wigo4it/renovate-config",
-    "github>wigo4it/renovate-config:terraform"
+    "github>wigo4it/renovate-config:terraform",
+    "github>wigo4it/renovate-config:github-actions"
+  ],
+  "schedule": ["every weekend"],
+  "packageRules": [
+    {
+      "description": "GitHub Actions workflow updates — automerge immediately, no schedule or dashboard gate. Digest pins are low-risk and keep the runner supply chain secure.",
+      "matchManagers": ["github-actions"],
+      "minimumReleaseAge": null,
+      "automerge": true,
+      "automergeType": "pr",
+      "dependencyDashboardApproval": false,
+      "labels": ["lane:automation"]
+    }
   ]
 }
