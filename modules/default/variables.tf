@@ -201,6 +201,16 @@ variable "microsoft_defender_enabled" {
   default     = false
 }
 
+variable "microsoft_defender_log_analytics_workspace_id" {
+  description = "(Optional) Dedicated Defender workspace ID. Defaults to the AKS monitoring workspace when omitted."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.microsoft_defender_log_analytics_workspace_id == null || can(regex("(?i)^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/microsoft.operationalinsights/workspaces/[^/]+$", var.microsoft_defender_log_analytics_workspace_id))
+    error_message = "Provide a Log Analytics workspace resource ID or null."
+  }
+}
+
 variable "oms_agent_enabled" {
   description = "(Optional) Enable the OMS agent (Container Insights) for container log collection. Disable when using an alternative log collector such as Grafana Alloy."
   type        = bool

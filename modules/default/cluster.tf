@@ -163,11 +163,11 @@ resource "azurerm_kubernetes_cluster" "default" {
     }
   }
 
-  # WAF - Security: Microsoft Defender — alleen inschakelen als LAW beschikbaar is
+  # Defender may use a different workspace from Container Insights.
   dynamic "microsoft_defender" {
-    for_each = var.microsoft_defender_enabled && local.log_analytics_workspace_id != null ? ["enabled"] : []
+    for_each = var.microsoft_defender_enabled && (var.microsoft_defender_log_analytics_workspace_id != null || local.log_analytics_workspace_id != null) ? ["enabled"] : []
     content {
-      log_analytics_workspace_id = local.log_analytics_workspace_id
+      log_analytics_workspace_id = var.microsoft_defender_log_analytics_workspace_id != null ? var.microsoft_defender_log_analytics_workspace_id : local.log_analytics_workspace_id
     }
   }
 
