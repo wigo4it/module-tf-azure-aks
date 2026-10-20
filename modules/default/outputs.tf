@@ -49,10 +49,10 @@ output "kubeconfig_raw" {
 }
 
 output "kubelet_identity" {
-  description = "The kubelet identity of the AKS cluster used for pulling container images"
-  value = {
+  description = "The kubelet identity of the AKS cluster used for pulling container images, or null when unavailable"
+  value = try({
     object_id                 = azurerm_kubernetes_cluster.default.kubelet_identity[0].object_id
     client_id                 = azurerm_kubernetes_cluster.default.kubelet_identity[0].client_id
     user_assigned_identity_id = azurerm_kubernetes_cluster.default.kubelet_identity[0].user_assigned_identity_id
-  }
+  }, null)
 }

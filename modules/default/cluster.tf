@@ -135,9 +135,16 @@ resource "azurerm_kubernetes_cluster" "default" {
     skip_nodes_with_local_storage = var.skip_nodes_with_local_storage
   }
 
-  workload_autoscaler_profile {
-    keda_enabled                    = try(var.workload_autoscaler_profile.keda_enabled, false)
-    vertical_pod_autoscaler_enabled = try(var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled, false)
+  dynamic "workload_autoscaler_profile" {
+    for_each = (
+      try(var.workload_autoscaler_profile.keda_enabled, false) ||
+      try(var.workload_autoscaler_profile.vertical_pod_autoscaler_enabled, false)
+    ) ? [var.workload_autoscaler_profile] : []
+
+    content {
+      keda_enabled                    = workload_autoscaler_profile.value.keda_enabled
+      vertical_pod_autoscaler_enabled = workload_autoscaler_profile.value.vertical_pod_autoscaler_enabled
+    }
   }
 
   dynamic "api_server_access_profile" {

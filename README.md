@@ -21,6 +21,28 @@ In practice, this means:
 Use none for deterministic, tf-controlled upgrades.
 Use a non-none channel when you want AKS to perform automatic upgrades.
 
+## Workload autoscalers
+
+Set `workload_autoscaler_profile.keda_enabled` or
+`workload_autoscaler_profile.vertical_pod_autoscaler_enabled` to `true` to enable
+the corresponding AKS-managed autoscaler. Both flags default to `false`.
+
+When the profile is `null`, empty, or both flags are `false`, the module omits
+the profile block. Azure does not retain a profile with both autoscalers disabled;
+omitting it prevents a repeated addition on every Terraform plan. Enabled
+configurations keep their configured flags unchanged.
+
+Run the local regression tests without Azure credentials or resource changes:
+
+```shell
+terraform -chdir=modules/default init -backend=false
+terraform -chdir=modules/default test -filter=tests/workload_autoscaler_profile.tftest.hcl
+```
+
+These mocked plans check profile omission and enabled flag combinations. They do
+not verify Azure API behavior when disabling previously enabled autoscalers;
+test that transition on a non-production cluster before rolling out a release.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -103,7 +125,7 @@ No modules.
 | <a name="input_tags"></a> [tags](#input\_tags) | (Optional) A map of tags to assign to all resources. | `map(string)` | <pre>{<br/>  "deployment_method": "terraform",<br/>  "module_name": "module-haven-cluster-azure-digilab"<br/>}</pre> | no |
 | <a name="input_timeouts_update"></a> [timeouts\_update](#input\_timeouts\_update) | (Optional) Used when updating the Kubernetes Cluster. Defaults to 120 minutes (lager dan Azure DevOps pipeline timeout om state lock te voorkomen). | `string` | `"120m"` | no |
 | <a name="input_virtual_network"></a> [virtual\_network](#input\_virtual\_network) | (Required) Virtual network configuration for the AKS cluster. If is\_existing is true, id must be provided. | <pre>object({<br/>    is_existing         = optional(bool, false)<br/>    id                  = optional(string)<br/>    name                = string<br/>    resource_group_name = string<br/>    address_space       = optional(list(string), [])<br/>    peerings            = optional(list(string), [])<br/>    subnet = optional(object({<br/>      is_existing       = optional(bool, false)<br/>      name              = string<br/>      address_prefixes  = optional(list(string), [])<br/>      service_endpoints = optional(list(string), ["Microsoft.Storage", "Microsoft.KeyVault", "Microsoft.ContainerRegistry"])<br/>    }))<br/>  })</pre> | n/a | yes |
-| <a name="input_workload_autoscaler_profile"></a> [workload\_autoscaler\_profile](#input\_workload\_autoscaler\_profile) | (Optional) Workload autoscaler profile for the AKS cluster. | <pre>object({<br/>    keda_enabled                    = optional(bool, false)<br/>    vertical_pod_autoscaler_enabled = optional(bool, false)<br/>  })</pre> | `null` | no |
+| <a name="input_workload_autoscaler_profile"></a> [workload\_autoscaler\_profile](#input\_workload\_autoscaler\_profile) | (Optional) Workload autoscaler profile for the AKS cluster. Omitted when null or both autoscalers are disabled to prevent perpetual changes. | <pre>object({<br/>    keda_enabled                    = optional(bool, false)<br/>    vertical_pod_autoscaler_enabled = optional(bool, false)<br/>  })</pre> | `null` | no |
 | <a name="input_workload_identity_enabled"></a> [workload\_identity\_enabled](#input\_workload\_identity\_enabled) | (Optional) Enable workload identity for the AKS cluster. | `bool` | `true` | no |
 
 ## Outputs
@@ -115,7 +137,7 @@ No modules.
 | <a name="output_cluster_oidc_issuer_url"></a> [cluster\_oidc\_issuer\_url](#output\_cluster\_oidc\_issuer\_url) | n/a |
 | <a name="output_kube_config"></a> [kube\_config](#output\_kube\_config) | The kube config of the AKS cluster. |
 | <a name="output_kubeconfig_raw"></a> [kubeconfig\_raw](#output\_kubeconfig\_raw) | Raw kubeconfig for the AKS cluster |
-| <a name="output_kubelet_identity"></a> [kubelet\_identity](#output\_kubelet\_identity) | The kubelet identity of the AKS cluster used for pulling container images |
+| <a name="output_kubelet_identity"></a> [kubelet\_identity](#output\_kubelet\_identity) | The kubelet identity of the AKS cluster used for pulling container images, or null when unavailable |
 | <a name="output_kubernetes_cluster_resourcegroup_name"></a> [kubernetes\_cluster\_resourcegroup\_name](#output\_kubernetes\_cluster\_resourcegroup\_name) | The resource group name of the AKS cluster. |
 | <a name="output_load_balancer_ips"></a> [load\_balancer\_ips](#output\_load\_balancer\_ips) | n/a |
 | <a name="output_node_resource_group_name"></a> [node\_resource\_group\_name](#output\_node\_resource\_group\_name) | The node resource group name of the AKS cluster. |
