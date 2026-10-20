@@ -414,7 +414,7 @@ variable "tags" {
 }
 
 variable "workload_autoscaler_profile" {
-  description = "(Optional) Workload autoscaler profile for the AKS cluster."
+  description = "(Optional) Workload autoscaler profile for the AKS cluster. Omitted when null or both autoscalers are disabled to prevent perpetual changes."
   type = object({
     keda_enabled                    = optional(bool, false)
     vertical_pod_autoscaler_enabled = optional(bool, false)
